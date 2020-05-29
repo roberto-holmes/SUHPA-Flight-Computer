@@ -1,0 +1,3 @@
+Layer Pairs Export File for PCB: C:\Users\Roberto\Documents\Projects\EAGLE\SUHPA Flight Computer\Altium\Pod\Pod.PcbDoc
+LayersSetName=Top_Bot_Thru_Holes|DrillFile=pod-roundholes.txt|DrillLayers=gtl,gbl
+LayersSetName=Top_Bot_Slot_Holes|DrillFile=pod-slotholes.txt|DrillLayers=gtl,gbl
