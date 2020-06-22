@@ -1,5 +1,7 @@
 # Ignore Altium backup files
-/Altium/History/
+/Altium/Pod/History/
+/Altium/Pod/Project Logs for Pod/
+/Altium/Pod/Project Outputs for Pod/
 
 # Ignore list for Eagle, a PCB layout tool
 
