@@ -1,3 +1,6 @@
+# Ignore Altium backup files
+/Altium/History/
+
 # Ignore list for Eagle, a PCB layout tool
 
 # Backup files
