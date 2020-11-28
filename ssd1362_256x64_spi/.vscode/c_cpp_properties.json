@@ -22,7 +22,6 @@
                 "C:/Users/Charlie/Documents/Arduino/libraries/Adafruit_BMP3XX_Library",
 				"C:/Users/Charlie/Documents/Arduino/libraries/Adafruit_Unified_Sensor",
 				"C:/Users/Charlie/Documents/Arduino/libraries/Adafruit_GFX_Library",
-				"C:/Users/Charlie/Documents/Arduino/libraries/Adafruit_SSD1362",
                 "E:/Software/Arduino/hardware/tools/arm/arm-none-eabi/include/c++/5.4.1/ext/"
             ],
             "defines": [

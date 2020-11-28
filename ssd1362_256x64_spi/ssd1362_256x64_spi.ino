@@ -41,6 +41,7 @@ Adafruit_SSD1362 display(SCREEN_WIDTH, SCREEN_HEIGHT,
 #define OLED_DC 41
 #define OLED_CS 17
 #define OLED_RESET 16
+#define OLED_FR 20
 Adafruit_SSD1362 display (SCREEN_WIDTH, SCREEN_HEIGHT, &SPI, OLED_DC, OLED_RESET, OLED_CS);
 
 #define NUMFLAKES 10 // Number of snowflakes in the animation example
@@ -54,6 +55,8 @@ void setup ()
 	Serial.begin (9600);
 
 	//while (!Serial.dtr ());
+
+	pinMode (OLED_FR, INPUT);
 
 	// SSD1362_SWITCHCAPVCC = generate display voltage from 3.3V internally
 	if (!display.begin (SSD1362_EXTERNALVCC))
@@ -122,11 +125,21 @@ void setup ()
 
 void loop ()
 {
-	display.invertDisplay (true);
-	drawLines ();
+	// display.invertDisplay (true);
+	// drawLines ();
 
-	display.invertDisplay (false);
-	drawLines ();
+	// display.invertDisplay (false);
+	// drawLines ();
+
+	display.clearDisplay ();
+
+	display.drawPixel (128 + 64, 32 + 16, SSD1362_WHITE);
+	display.drawLine (128 + 16, 32 + 1, 128 + 16, 63 - 8, SSD1362_WHITE / 2);
+
+	while (digitalRead (OLED_FR)) {}
+	display.display ();
+
+	delay (200);
 }
 
 void drawLines ()

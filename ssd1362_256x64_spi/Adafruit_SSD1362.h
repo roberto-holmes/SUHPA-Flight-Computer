@@ -67,7 +67,7 @@ typedef uint32_t PortMask;
 #endif
 /// fit into the SSD1362_ naming scheme
 #define SSD1362_BLACK 0   ///< Draw 'off' pixels
-#define SSD1362_WHITE 255   ///< Draw 'on' pixels
+#define SSD1362_WHITE 15 ///< Draw 'on' pixels
 #define SSD1362_INVERSE 2 ///< Invert pixels
 
 #define SSD1362_COMMANDLOCK 0xFD
