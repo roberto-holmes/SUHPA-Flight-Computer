@@ -10,10 +10,6 @@
 #define NULL 0
 #endif	// !NULL
 
-// #ifndef VSCODE
-// #include <WProgram.h>
-// #endif
-
 #include <Adafruit_BMP3XX.h>
 #include <Adafruit_BNO055.h>
 #include <SdFat.h>
