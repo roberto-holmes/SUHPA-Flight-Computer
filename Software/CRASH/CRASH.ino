@@ -10,9 +10,9 @@
 #define NULL 0
 #endif	// !NULL
 
-#ifndef VSCODE
-#include <WProgram.h>
-#endif
+// #ifndef VSCODE
+// #include <WProgram.h>
+// #endif
 
 #include <Adafruit_BMP3XX.h>
 #include <Adafruit_BNO055.h>
@@ -88,14 +88,15 @@ const int horizMinVal = 600;
 float vertZero, horizZero;
 
 // Stick input range
-const int vertStickMax = 100;
-const int vertStickMin = 900;
-const int horizStickMax = 100;
-const int horizStickMin = 900;
+const int vertStickMax = 107;
+const int vertStickMin = 910;
+const int horizStickMax = 107;
+const int horizStickMin = 905;
 float vertStickZero, horizStickZero;
 
-const float vertStickMultiplier = 1000.0;
-const float horizStickMultiplier = 1000.0;
+const float vertStickMultiplier = 1.0;
+const float horizStickMultiplier = 1.0;
+float vertStickRes, horizStickRes;
 
 // Number of Trim steps / 2
 const int vertSteps = 10;
@@ -127,6 +128,7 @@ unsigned long trimRightLastPressTime = 0;
 
 const unsigned long debounceDelay = 50;
 const unsigned long holdDelay = 250;
+const unsigned long holdDelayCentre = 500;
 
 // Radio Setup
 RF24 radio(radioCE, radioCSN);
@@ -191,14 +193,17 @@ void setup()
 	delay(200);
 	digitalWrite(leds[0], LOW);
 
-	vertRes = (vertMaxVal - vertMinVal) / (2 * vertSteps);
-	horizRes = (horizMaxVal - horizMinVal) / (2 * horizSteps);
+	vertRes = (vertMaxVal - vertMinVal) / (2.0 * (vertSteps));
+	horizRes = (horizMaxVal - horizMinVal) / (2.0 * (horizSteps));
 
-	vertStickZero = (vertStickMax - vertStickMin) / 2;
-	horizStickZero = (horizStickMax - horizStickMin) / 2;
+	vertStickZero = (vertStickMax + vertStickMin) / 2.0;
+	horizStickZero = (horizStickMax + horizStickMin) / 2.0;
 
-	vertZero = (vertMaxVal - vertMinVal) / 2;
-	horizZero = (horizMaxVal - horizMinVal) / 2;
+	vertZero = (vertMaxVal + vertMinVal) / 2.0;
+	horizZero = (horizMaxVal + horizMinVal) / 2.0;
+
+	vertStickRes = vertStickMultiplier * (vertMaxVal - vertMinVal) / 2.0;
+	horizStickRes = horizStickMultiplier * (horizMaxVal - horizMinVal) / 2.0;
 
 	radio.begin();
 	radio.openWritingPipe(address);
@@ -222,18 +227,37 @@ void loop()
 	// horizStickValue += (horizTrim * 0.2);
 
 	// Read Stick inputs and normalise
-	float vertStickValue = (1024 - analogRead(stickVert) - vertStickZero) / 1024.0;
-	float horizStickValue = (analogRead(stickHoriz) - horizStickZero) / 1024.0;
+	float vertStickValue = -2.0 * (analogRead(stickVert) - vertStickZero) / (vertStickMax - vertStickMin);
+	float horizStickValue = 2.0 * (analogRead(stickHoriz) - horizStickZero) / (horizStickMax - horizStickMin);
 
 	// Calculate PWM values in both axis by combining stick inputs with trim
-	float tempVertVal = vertStickValue * vertStickMultiplier + vertTrim * vertRes + vertZero;
-	float tempHorizVal = horizStickValue * horizStickMultiplier + horizTrim * horizRes + horizZero;
+	float tempVertVal = vertStickValue * vertStickRes + vertTrim * vertRes + vertZero;
+	float tempHorizVal = horizStickValue * horizStickRes + horizTrim * horizRes + horizZero;
 
-	// Ensure PWM values are valid
-	if (tempVertVal <= vertMaxVal && tempVertVal >= vertMinVal)
-		vertVal = tempVertVal;
-	if (tempHorizVal <= horizMaxVal && tempHorizVal >= horizMinVal)
-		horizVal = tempHorizVal;
+	vertStickValue = constrain(vertStickValue, -1, 1);
+	horizStickValue = constrain(horizStickValue, -1, 1);
+
+	vertVal = constrain(tempVertVal, vertMinVal, vertMaxVal);
+	horizVal = constrain(tempHorizVal, horizMinVal, horizMaxVal);
+
+	// // Ensure PWM values are valid
+	// if (tempVertVal <= vertMaxVal && tempVertVal >= vertMinVal)
+	// 	vertVal = tempVertVal;
+	// else if (tempVertVal > vertMaxVal)
+	// 	vertVal = vertMaxVal;
+	// else if (tempVertVal < vertMinVal)
+	// 	vertVal = vertMinVal;
+	// else
+	// 	Serial.print("Invalid Elevator PWM value");
+
+	// if (tempHorizVal <= horizMaxVal && tempHorizVal >= horizMinVal)
+	// 	horizVal = tempHorizVal;
+	// else if (tempHorizVal > horizMaxVal)
+	// 	horizVal = horizMaxVal;
+	// else if (tempHorizVal < horizMinVal)
+	// 	horizVal = horizMinVal;
+	// else
+	// 	Serial.print("Invalid Rudder PWM value");
 
 	// Debug PWM values
 	// Serial.print(vertVal);
@@ -243,13 +267,31 @@ void loop()
 	// Transmit PWM values
 	transmit(vertVal, horizVal);
 
+	// Serial.print(analogRead(stickVert));
+	// Serial.print(" : ");
+	// Serial.print(vertStickValue);
+	// Serial.print("\t");
+	// Serial.print(analogRead(stickHoriz));
+	// Serial.print(" : ");
+	// Serial.print(horizStickValue);
+	// Serial.print("\n");
+
+	Serial.print(tempVertVal);
+	Serial.print(" : ");
+	Serial.print(vertVal);
+	Serial.print("\t");
+	Serial.print(tempHorizVal);
+	Serial.print(" : ");
+	Serial.print(horizVal);
+	Serial.print("\n");
+
 	delay(10);
 
 	// Check if button is being pressed
 	if (digitalRead(trimUp))
 	{
 		// Debounce and check if the button is being held down
-		if ((!trimUpDown || millis() > trimUpLastPressTime + holdDelay) && millis() > trimUpLastPressTime + debounceDelay)
+		if ((!trimUpDown || (vertTrim != 0 && millis() > trimUpLastPressTime + holdDelay) || (vertTrim == 0 && millis() > trimUpLastPressTime + holdDelayCentre)) && millis() > trimUpLastPressTime + debounceDelay)
 		{
 			trimUpLastPressTime = millis();
 			trimUpDown = true;
@@ -264,7 +306,7 @@ void loop()
 
 	if (digitalRead(trimDown))
 	{
-		if ((!trimDownDown || millis() > trimDownLastPressTime + holdDelay) && millis() > trimDownLastPressTime + debounceDelay)
+		if ((!trimDownDown || (vertTrim != 0 && millis() > trimDownLastPressTime + holdDelay) || (vertTrim == 0 && millis() > trimDownLastPressTime + holdDelayCentre)) && millis() > trimDownLastPressTime + debounceDelay)
 		{
 			trimDownLastPressTime = millis();
 			trimDownDown = true;
@@ -279,7 +321,7 @@ void loop()
 
 	if (digitalRead(trimLeft))
 	{
-		if ((!trimLeftDown || millis() > trimLeftLastPressTime + holdDelay) && millis() > trimLeftLastPressTime + debounceDelay)
+		if ((!trimLeftDown || (horizTrim != 0 && millis() > trimLeftLastPressTime + holdDelay) || (horizTrim == 0 && millis() > trimLeftLastPressTime + holdDelayCentre)) && millis() > trimLeftLastPressTime + debounceDelay)
 		{
 			trimLeftLastPressTime = millis();
 			trimLeftDown = true;
@@ -294,7 +336,7 @@ void loop()
 
 	if (digitalRead(trimRight))
 	{
-		if ((!trimRightDown || millis() > trimRightLastPressTime + holdDelay) && millis() > trimRightLastPressTime + debounceDelay)
+		if ((!trimRightDown || (horizTrim != 0 && millis() > trimRightLastPressTime + holdDelay) || (horizTrim == 0 && millis() > trimRightLastPressTime + holdDelayCentre)) && millis() > trimRightLastPressTime + debounceDelay)
 		{
 			trimRightLastPressTime = millis();
 			trimRightDown = true;
@@ -372,13 +414,13 @@ void transmit(float ele, float rud)
 	memcpy(package + 0, &ele, 4);
 	memcpy(package + 4, &rud, 4);
 
-	for (int i = 0; i < PACKAGE_SIZE; i++)
-	{
-		// Serial.print("Radio: ");
-		Serial.print(package[i]);
-		Serial.print(" ");
-	}
-	Serial.println();
+	// for (int i = 0; i < PACKAGE_SIZE; i++)
+	// {
+	// 	// Serial.print("Radio: ");
+	// 	Serial.print(package[i]);
+	// 	Serial.print(" ");
+	// }
+	// Serial.println();
 	radio.write(&package, PACKAGE_SIZE);
 }
 
