@@ -1,34 +1,18 @@
-#ifndef TRUE
-#define TRUE 1
-#endif	// !TRUE
-
-#ifndef FALSE
-#define FALSE 0
-#endif	// !FALSE
-
-#ifndef NULL
-#define NULL 0
-#endif	// !NULL
-
 #include <Adafruit_BMP3XX.h>
 #include <Adafruit_BNO055.h>
+#include <EEPROM.h>
+#include <RF24.h>
+#include <SPI.h>
 #include <SdFat.h>
 #include <TimeLib.h>
+#include <Wire.h>
 #include <avr/pgmspace.h>
 #include <math.h>
+#include <nRF24L01.h>
 #include <printf.h>
 #include <stdint.h>
 #include <usb_serial.h>
 #include <util/crc16.h>
-
-// #include "sdios.h"
-// #include <DS1307RTC.h>
-#include <EEPROM.h>
-#include <RF24.h>
-#include <SPI.h>
-#include <nRF24L01.h>
-// #include <SerialFlash.h>
-#include <Wire.h>
 
 int leds[] = {22, 21, 40, 39, 38, 37, 35, 0, 1, 2, 3, 4};
 
@@ -209,19 +193,11 @@ void setup()
 
 	updateVertTrim(0);
 	updateHorizTrim(0);
-
-	// updateTrim();
 }
 
 // the loop routine runs over and over again forever:
 void loop()
 {
-	// float vertStickValue = 1 - (analogRead(stickVert) / 1024.0);
-	// float horizStickValue = analogRead(stickHoriz) / 1024.0;
-
-	// vertStickValue += (vertTrim * 0.2);
-	// horizStickValue += (horizTrim * 0.2);
-
 	// Read Stick inputs and normalise
 	float vertStickValue = -2.0 * (analogRead(stickVert) - vertStickZero) / (vertStickMax - vertStickMin);
 	float horizStickValue = 2.0 * (analogRead(stickHoriz) - horizStickZero) / (horizStickMax - horizStickMin);
@@ -235,25 +211,6 @@ void loop()
 
 	vertVal = constrain(tempVertVal, vertMinVal, vertMaxVal);
 	horizVal = constrain(tempHorizVal, horizMinVal, horizMaxVal);
-
-	// // Ensure PWM values are valid
-	// if (tempVertVal <= vertMaxVal && tempVertVal >= vertMinVal)
-	// 	vertVal = tempVertVal;
-	// else if (tempVertVal > vertMaxVal)
-	// 	vertVal = vertMaxVal;
-	// else if (tempVertVal < vertMinVal)
-	// 	vertVal = vertMinVal;
-	// else
-	// 	Serial.print("Invalid Elevator PWM value");
-
-	// if (tempHorizVal <= horizMaxVal && tempHorizVal >= horizMinVal)
-	// 	horizVal = tempHorizVal;
-	// else if (tempHorizVal > horizMaxVal)
-	// 	horizVal = horizMaxVal;
-	// else if (tempHorizVal < horizMinVal)
-	// 	horizVal = horizMinVal;
-	// else
-	// 	Serial.print("Invalid Rudder PWM value");
 
 	// Debug PWM values
 	// Serial.print(vertVal);
@@ -419,42 +376,3 @@ void transmit(float ele, float rud)
 	// Serial.println();
 	radio.write(&package, PACKAGE_SIZE);
 }
-
-// void updateTrim()
-// {
-// 	if (vertTrim > 2) vertTrim = 2;
-// 	if (vertTrim < -2) vertTrim = -2;
-// 	if (horizTrim > 2) horizTrim = 2;
-// 	if (horizTrim < -2) horizTrim = -2;
-
-// 	digitalWrite(vertMin, LOW);
-// 	digitalWrite(vertLow, LOW);
-// 	digitalWrite(vertMid, LOW);
-// 	digitalWrite(vertHigh, LOW);
-// 	digitalWrite(vertMax, LOW);
-// 	digitalWrite(horizMin, LOW);
-// 	digitalWrite(horizLow, LOW);
-// 	digitalWrite(horizMid, LOW);
-// 	digitalWrite(horizHigh, LOW);
-// 	digitalWrite(horizMax, LOW);
-
-// 	if (vertTrim == -2) digitalWrite(vertMin, HIGH);
-// 	else if (vertTrim == -1)
-// 		digitalWrite(vertLow, HIGH);
-// 	else if (vertTrim == 0)
-// 		digitalWrite(vertMid, HIGH);
-// 	else if (vertTrim == 1)
-// 		digitalWrite(vertHigh, HIGH);
-// 	else if (vertTrim == 2)
-// 		digitalWrite(vertMax, HIGH);
-
-// 	if (horizTrim == -2) digitalWrite(horizMin, HIGH);
-// 	else if (horizTrim == -1)
-// 		digitalWrite(horizLow, HIGH);
-// 	else if (horizTrim == 0)
-// 		digitalWrite(horizMid, HIGH);
-// 	else if (horizTrim == 1)
-// 		digitalWrite(horizHigh, HIGH);
-// 	else if (horizTrim == 2)
-// 		digitalWrite(horizMax, HIGH);
-// }
