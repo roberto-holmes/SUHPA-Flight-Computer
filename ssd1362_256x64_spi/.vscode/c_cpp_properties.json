@@ -1,0 +1,47 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "E:/Git/Rocket/ArduinoHeaders",
+                "E:/Software/Arduino/hardware/teensy/avr/cores/teensy4",
+                "E:/Software/Arduino/hardware/teensy/avr/libraries/Eigen/",
+                "E:/Software/Arduino/hardware/teensy/avr/libraries/NXPMotionSense",
+                "E:/Software/Arduino/hardware/teensy/avr/libraries/DS1307RTC",
+                "E:/Software/Arduino/hardware/teensy/avr/libraries/Wire",
+                "E:/Software/Arduino/hardware/teensy/avr/libraries/Time",
+                "E:/Software/Arduino/hardware/teensy/avr/libraries/SerialFlash",
+				"E:/Software/Arduino/hardware/teensy/avr/libraries/EEPROM",
+                "E:/Software/Arduino/hardware/teensy/avr/libraries/SPI",				
+				"E:/Software/Arduino/libraries/Kalman",
+                "C:/Users/Charlie/Documents/Arduino/libraries/RF24",
+                "C:/Users/Charlie/Documents/Arduino/libraries/SPIMemory",
+                "C:/Users/Charlie/Documents/Arduino/libraries/SdFat/src",
+                "C:/Users/Charlie/Documents/Arduino/libraries/Adafruit_BNO055",
+                "C:/Users/Charlie/Documents/Arduino/libraries/Adafruit_BMP3XX_Library",
+				"C:/Users/Charlie/Documents/Arduino/libraries/Adafruit_Unified_Sensor",
+				"C:/Users/Charlie/Documents/Arduino/libraries/Adafruit_GFX_Library",
+                "E:/Software/Arduino/hardware/tools/arm/arm-none-eabi/include/c++/5.4.1/ext/"
+            ],
+            "defines": [
+                "_DEBUG",
+                "VSCODE",
+                "UNICODE",
+                "_UNICODE",
+                "USB_SERIAL",
+                "__IMXRT1062__",
+                "F_CPU=450000000",
+                "TEENSYDUINO=152",
+                "__arm__",
+                "ARDUINO=10812",
+                "ARDUINO_TEENSY41"
+            ],
+            "compilerPath": "E:/Software/Arduino/hardware/tools/arm/bin/arm-none-eabi-gcc.exe",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "gcc-x64"
+        }
+    ],
+    "version": 4
+}
