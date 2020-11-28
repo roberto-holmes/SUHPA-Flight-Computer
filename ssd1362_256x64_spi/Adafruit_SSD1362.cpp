@@ -487,11 +487,11 @@ bool Adafruit_SSD1362::begin (uint8_t vcs, uint8_t addr, bool reset, bool periph
 	clearDisplay ();
 	if (HEIGHT > 32)
 	{
-		drawBitmap ((WIDTH - splash1_width) / 2, (HEIGHT - splash1_height) / 2, splash1_data, splash1_width, splash1_height, 1);
+		drawBitmap ((WIDTH - splash1_width) / 2, (HEIGHT - splash1_height) / 2, splash1_data, splash1_width, splash1_height, WHITE);
 	}
 	else 
 	{
-    	drawBitmap((WIDTH - splash2_width) / 2, (HEIGHT - splash2_height) / 2,splash2_data, splash2_width, splash2_height, 1);
+		drawBitmap ((WIDTH - splash2_width) / 2, (HEIGHT - splash2_height) / 2, splash2_data, splash2_width, splash2_height, WHITE);
 	}
 
   	vccstate = vcs;
@@ -610,10 +610,10 @@ bool Adafruit_SSD1362::begin (uint8_t vcs, uint8_t addr, bool reset, bool periph
 	ssd1362_command1 (SSD1362_DISPLAYOFF);
 	ssd1362_command1 (SSD1362_COLUMNADDR);
 	ssd1362_command1 (0x00);
-	ssd1362_command1 (HEIGHT - 1);
+	ssd1362_command1 (WIDTH - 1);
 	ssd1362_command1 (SSD1362_PAGEADDR);
 	ssd1362_command1 (0x00);
-	ssd1362_command1 (WIDTH - 1);
+	ssd1362_command1 (HEIGHT - 1);
 	ssd1362_command1 (SSD1362_SETCONTRAST);
 	ssd1362_command1 (contrast);
 	ssd1362_command1 (SSD1362_SEGREMAP);
@@ -624,7 +624,7 @@ bool Adafruit_SSD1362::begin (uint8_t vcs, uint8_t addr, bool reset, bool periph
 	ssd1362_command1 (0x00);
 	ssd1362_command1 (SSD1362_NORMALDISPLAY);
 	ssd1362_command1 (SSD1362_SETMULTIPLEX);
-	ssd1362_command1 (HEIGHT - 1);
+	ssd1362_command1 (WIDTH - 1);
 	ssd1362_command1 (SSD1362_VDDREGULATOR);
 	ssd1362_command1 (0x01);
 	ssd1362_command1 (SSD1362_VDDIREF);
@@ -690,7 +690,7 @@ void Adafruit_SSD1362::drawPixel (int16_t x, int16_t y, uint16_t color)
 			break;
 		}
 
-		buffer[x + y * WIDTH] = color;
+		buffer[x + (y * WIDTH)] = color;
 	}
 }
 
@@ -885,7 +885,7 @@ bool Adafruit_SSD1362::getPixel (int16_t x, int16_t y)
 				y = HEIGHT - y - 1;
 				break;
 		}
-		return buffer[x + y * WIDTH] > 127;
+		return buffer[x + (y * WIDTH)] > 127;
 	}
 	return 0; // Pixel out of bounds
 }
@@ -906,7 +906,7 @@ uint8_t *Adafruit_SSD1362::getBuffer(void) { return buffer; }
             called. Call after each graphics command, or after a whole set
             of graphics commands, as best needed by one's own application.
 */
-void Adafruit_SSD1362::display(void) 
+void Adafruit_SSD1362::display (void)
 {
 	TRANSACTION_START
 	ssd1362_command1 (SSD1362_PAGEADDR);
@@ -923,43 +923,59 @@ void Adafruit_SSD1362::display(void)
 	// }
 
 #if defined(ESP8266)
-  // ESP8266 needs a periodic yield() call to avoid watchdog reset.
-  // With the limited size of SSD1362 displays, and the fast bitrate
-  // being used (1 MHz or more), I think one yield() immediately before
-  // a screen write and one immediately after should cover it.  But if
-  // not, if this becomes a problem, yields() might be added in the
-  // 32-byte transfer condition below.
-  yield();
+	// ESP8266 needs a periodic yield() call to avoid watchdog reset.
+	// With the limited size of SSD1362 displays, and the fast bitrate
+	// being used (1 MHz or more), I think one yield() immediately before
+	// a screen write and one immediately after should cover it.  But if
+	// not, if this becomes a problem, yields() might be added in the
+	// 32-byte transfer condition below.
+	yield ();
 #endif
-  uint16_t count = WIDTH * HEIGHT;
-  uint8_t *ptr = buffer;
-  if (wire) { // I2C
-    wire->beginTransmission(i2caddr);
-    WIRE_WRITE((uint8_t)0x40);
-    uint8_t bytesOut = 1;
-    while (count--) {
-      if (bytesOut >= WIRE_MAX) {
-        wire->endTransmission();
-        wire->beginTransmission(i2caddr);
-        WIRE_WRITE((uint8_t)0x40);
-        bytesOut = 1;
-      }
-	  //WIRE_WRITE (((*ptr++) & 0x0F) | (((*ptr++) & 0x0F) << 4));
-	  WIRE_WRITE (*ptr++);
-	  bytesOut++;
-    }
-    wire->endTransmission();
-  } else { // SPI
-    SSD1362_MODE_DATA
-    while (count--)
+	uint16_t count = WIDTH * HEIGHT / 2;
+	uint8_t* ptr = buffer;
+	if (wire)
 	{
-		//SPIwrite (((*ptr++) & 0x07) | (((*ptr++) & 0x07) << 4));
-		SPIwrite (*ptr++);
+		// I2C
+		wire->beginTransmission (i2caddr);
+		WIRE_WRITE ((uint8_t)0x40);
+		uint8_t bytesOut = 1;
+		while (count--)
+		{
+			if (bytesOut >= WIRE_MAX)
+			{
+				wire->endTransmission ();
+				wire->beginTransmission (i2caddr);
+				WIRE_WRITE ((uint8_t)0x40);
+				bytesOut = 1;
+			}
+			WIRE_WRITE (((*ptr++) & 0x0F) | (((*ptr++) & 0x0F) << 4));
+			bytesOut++;
+		}
+		wire->endTransmission ();
 	}
-  }
-  TRANSACTION_END
+	else
+	{
+		// SPI
+		SSD1362_MODE_DATA
+
+		// for (uint16_t y = 0; y < HEIGHT; y++)
+		// {
+		// 	for (uint16_t x = 0; x < WIDTH; x += 2)
+		// 	{
+		// 		//SPIwrite (buffer[x + (y * WIDTH)] | (buffer[(x + WIDTH / 2) + (y * WIDTH)] << 4));
+		// 		SPIwrite (buffer[x + (y * WIDTH)] | (buffer[x + (y * WIDTH) + 1] << 4));
+		// 		SPIwrite (buffer[x + (y * WIDTH) + 128] | (buffer[x + (y * WIDTH) + 129] << 4));
+		// 	}
+		// }
+
+		//for (uint16_t i = 0; i < count; i += 2) SPIwrite (buffer[i] | (buffer[i + 1] << 4));
+
+		while (count--) SPIwrite (((*ptr++) & 0x0F) | (((*(ptr++)) & 0x0F) << 4));
+	}
+
+	TRANSACTION_END
 #if defined(ESP8266)
-  yield();
+	yield ();
 #endif
 }
 
