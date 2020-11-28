@@ -23,6 +23,7 @@
 #include <Wire.h>
 
 #include "Adafruit_SSD1362.h"
+#include "suhpaLogo.h"
 
 #define SCREEN_WIDTH 256 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
@@ -57,6 +58,8 @@ void setup ()
 	//while (!Serial.dtr ());
 
 	pinMode (OLED_FR, INPUT);
+	//pinMode (2, OUTPUT);
+	//pinMode (38, OUTPUT);
 
 	// SSD1362_SWITCHCAPVCC = generate display voltage from 3.3V internally
 	if (!display.begin (SSD1362_EXTERNALVCC))
@@ -66,92 +69,154 @@ void setup ()
 			; // Don't proceed, loop forever
 	}
 
-	// Show initial display buffer contents on the screen --
-	// the library initializes this with an Adafruit splash screen.
-	display.display ();
-	delay (200); // Pause for 2 seconds
-
-	// Clear the buffer
 	display.clearDisplay ();
-
-	// Draw a single pixel in white
-	display.drawPixel (10, 10, SSD1362_WHITE);
-
-	// Show the display buffer on the screen. You MUST call display() after
-	// drawing commands to make them visible on screen!
+	display.drawBitmap ((display.width () - SUHPALogo_width) / 2, (display.height () - SUHPALogo_height) / 2, SUHPALogo_data, SUHPALogo_width, SUHPALogo_height, SSD1362_WHITE);
 	display.display ();
-	delay (200);
-	// display.display() is NOT necessary after every single drawing command,
-	// unless that's what you want...rather, you can batch up a bunch of
-	// drawing operations and then update the screen all at once by calling
-	// display.display(). These examples demonstrate both approaches...
+	delay (500); // Pause for 2 seconds
 
-	// testdrawline();      // Draw many lines
+	// // Clear the buffer
+	// display.clearDisplay ();
 
-	// testdrawrect();      // Draw rectangles (outlines)
+	// // Draw a single pixel in white
+	// display.drawPixel (10, 10, SSD1362_WHITE);
 
-	// testfillrect();      // Draw rectangles (filled)
+	// // Show the display buffer on the screen. You MUST call display() after
+	// // drawing commands to make them visible on screen!
+	// display.display ();
+	// delay (200);
+	// // display.display()
+	// // is NOT necessary after every single drawing command,
+	// //unless that's what you want...rather, you can batch up a bunch of
+	// //drawing operations and then update the screen all at once by calling
+	// // display.display(). These examples demonstrate both approaches...
 
-	// testdrawcircle();    // Draw circles (outlines)
+	// testdrawline (); // Draw many lines
 
-	// testfillcircle();    // Draw circles (filled)
+	// testdrawrect (); // Draw rectangles (outlines)
 
-	// testdrawroundrect(); // Draw rounded rectangles (outlines)
+	// testfillrect (); // Draw rectangles (filled)
 
-	// testfillroundrect(); // Draw rounded rectangles (filled)
+	// testdrawcircle (); // Draw circles (outlines)
 
-	// testdrawtriangle();  // Draw triangles (outlines)
+	// testfillcircle (); // Draw circles (filled)
 
-	// testfilltriangle();  // Draw triangles (filled)
+	// testdrawroundrect (); // Draw rounded rectangles (outlines)
 
-	// testdrawchar();      // Draw characters of the default font
+	// testfillroundrect (); // Draw rounded rectangles (filled)
 
-	// testdrawstyles();    // Draw 'stylized' characters
+	// testdrawtriangle (); // Draw triangles (outlines)
 
-	// testscrolltext();    // Draw scrolling text
+	// testfilltriangle (); // Draw triangles (filled)
 
-	// testdrawbitmap();    // Draw a small bitmap image
+	// testdrawchar (); // Draw characters of the default font
 
-	// Invert and restore display, pausing in-between
-	// display.invertDisplay (true);
-	// delay (1500);
-	// display.invertDisplay (false);
-	// delay (500);
-	//display.invertDisplay (true);
-	//testanimate(logo_bmp, LOGO_WIDTH, LOGO_HEIGHT); // Animate bitmaps
+	// testdrawstyles (); // Draw 'stylized' characters
 
-	display.clearDisplay ();
+	// testscrolltext (); // Draw scrolling text
+
+	// testdrawbitmap (); // Draw a small bitmap image
+
+	// // Invert and restore display, pausing in-between
+	// // display.invertDisplay (true);
+	// // delay (1500);
+	// // display.invertDisplay (false);
+	// // delay (500);
+	// //display.invertDisplay (true);
+	// testanimate (logo_bmp, LOGO_WIDTH, LOGO_HEIGHT); // Animate bitmaps
+
+	// display.clearDisplay ();
 }
+
+uint8_t offset = 128;
 
 void loop ()
 {
+	display.clearDisplay ();
+
+	display.drawBitmap ((display.width () - SUHPALogo_width) / 2 + 256 + ((offset * 3) / 2) - 128, -16 + (display.height () - SUHPALogo_height) / 2, SUHPALogo_data, SUHPALogo_width, SUHPALogo_height, SSD1362_WHITE / 4);
+	display.drawBitmap ((display.width () - SUHPALogo_width) / 2 - 000 + ((offset * 3) / 2) - 128, -16 + (display.height () - SUHPALogo_height) / 2, SUHPALogo_data, SUHPALogo_width, SUHPALogo_height, SSD1362_WHITE / 4);
+	display.drawBitmap ((display.width () - SUHPALogo_width) / 2 - 256 + ((offset * 3) / 2) - 128, -16 + (display.height () - SUHPALogo_height) / 2, SUHPALogo_data, SUHPALogo_width, SUHPALogo_height, SSD1362_WHITE / 4);
+	display.drawBitmap ((display.width () - SUHPALogo_width) / 2 + 384 + ((offset * 3) / 2) - 128, -16 + (display.height () - SUHPALogo_height) / 2, SUHPALogo_data, SUHPALogo_width, SUHPALogo_height, SSD1362_WHITE / 4);
+	display.drawBitmap ((display.width () - SUHPALogo_width) / 2 + 128 + ((offset * 3) / 2) - 128, -16 + (display.height () - SUHPALogo_height) / 2, SUHPALogo_data, SUHPALogo_width, SUHPALogo_height, SSD1362_WHITE / 4);
+	display.drawBitmap ((display.width () - SUHPALogo_width) / 2 - 128 + ((offset * 3) / 2) - 128, -16 + (display.height () - SUHPALogo_height) / 2, SUHPALogo_data, SUHPALogo_width, SUHPALogo_height, SSD1362_WHITE / 4);
+	display.drawBitmap ((display.width () - SUHPALogo_width) / 2 - 384 + ((offset * 3) / 2) - 128, -16 + (display.height () - SUHPALogo_height) / 2, SUHPALogo_data, SUHPALogo_width, SUHPALogo_height, SSD1362_WHITE / 4);
+
+	display.drawBitmap ((display.width () - SUHPALogo_width) / 2 + 256 + (offset / 2) - 128, (display.height () - SUHPALogo_height) / 2, SUHPALogo_data, SUHPALogo_width, SUHPALogo_height, SSD1362_WHITE);
+	display.drawBitmap ((display.width () - SUHPALogo_width) / 2 - 000 + (offset / 2) - 128, (display.height () - SUHPALogo_height) / 2, SUHPALogo_data, SUHPALogo_width, SUHPALogo_height, SSD1362_WHITE);
+	display.drawBitmap ((display.width () - SUHPALogo_width) / 2 - 256 + (offset / 2) - 128, (display.height () - SUHPALogo_height) / 2, SUHPALogo_data, SUHPALogo_width, SUHPALogo_height, SSD1362_WHITE);
+	display.drawBitmap ((display.width () - SUHPALogo_width) / 2 + 384 + (offset / 2) - 128, (display.height () - SUHPALogo_height) / 2, SUHPALogo_data, SUHPALogo_width, SUHPALogo_height, SSD1362_WHITE);
+	display.drawBitmap ((display.width () - SUHPALogo_width) / 2 + 128 + (offset / 2) - 128, (display.height () - SUHPALogo_height) / 2, SUHPALogo_data, SUHPALogo_width, SUHPALogo_height, SSD1362_WHITE);
+	display.drawBitmap ((display.width () - SUHPALogo_width) / 2 - 128 + (offset / 2) - 128, (display.height () - SUHPALogo_height) / 2, SUHPALogo_data, SUHPALogo_width, SUHPALogo_height, SSD1362_WHITE);
+
+	display.display ();
+
+	offset++;
+
 	// display.invertDisplay (true);
 	// drawLines ();
 
 	// display.invertDisplay (false);
 	// drawLines ();
 
-	display.clearDisplay ();
+	//display.clearDisplay ();
 
-	display.drawPixel (128 + 64, 32 + 16, SSD1362_WHITE);
-	display.drawLine (128 + 16, 32 + 1, 128 + 16, 63 - 8, SSD1362_WHITE / 2);
+	// display.drawPixel (0, 0, SSD1362_WHITE);
+	// display.drawPixel (display.width () - 1, 0, SSD1362_WHITE / 2);
+	// display.drawPixel (display.width () - 1, display.height () - 1, SSD1362_WHITE / 2);
+	// display.drawPixel (0, display.height () - 1, SSD1362_WHITE);
 
-	while (digitalRead (OLED_FR)) {}
-	display.display ();
+	// display.drawPixel (128 + 64, 16 + 16, SSD1362_WHITE);
+	// display.drawPixel (128 + 64, 16 + 14, SSD1362_WHITE);
+	// display.drawPixel (128 + 66, 16 + 16, SSD1362_WHITE);
 
-	delay (200);
+	// display.drawPixel (128 + 64, 32 + 18, SSD1362_WHITE);
+	// display.drawPixel (128 + 64, 32 + 19, SSD1362_WHITE);
+	// display.drawPixel (128 + 65, 32 + 18, SSD1362_WHITE);
+
+	// display.drawLine (128 + 16, 32 + 1, 128 + 16, 63 - 8, SSD1362_WHITE / 2);
+
+	// display.fillRect (220, 32 + 8, 8, 4, SSD1362_WHITE * 3 / 4);
+
+	// while (digitalRead (OLED_FR)) {}
+	// display.display ();
+
+	// for (uint16_t i = 0; i < display.width (); i++)
+	// {
+	// 	display.clearDisplay ();
+	// 	display.drawPixel (i, 32, SSD1362_WHITE);
+	// 	display.drawPixel (255, 48, SSD1362_WHITE);
+	// 	display.drawPixel (127, 50, SSD1362_WHITE);
+	// 	display.display ();
+	// 	delay (50);
+	// }
+
+	// for (uint16_t i = display.width () - 2; i >= 1; i--)
+	// {
+	// 	display.clearDisplay ();
+	// 	display.drawPixel (i, 32, SSD1362_WHITE);
+	// 	display.drawPixel (255, 48, SSD1362_WHITE);
+	// 	display.drawPixel (127, 50, SSD1362_WHITE);
+	// 	display.display ();
+	// 	delay (50);
+	// }
+
+	//delay (200);
+
+	//drawLines ();
 }
 
 void drawLines ()
 {
 	display.clearDisplay ();
+	while (digitalRead (OLED_FR)) {}
 	display.display ();
 
 	delay (100);
 
-	for (int i = 0; i < SCREEN_WIDTH; i += 4)
+	for (int i = 0; i < display.width () / 2; i += 4)
 	{
-		display.drawLine (0, 0, i, display.height () - 1, i / 4);
+		display.drawLine (0, 0, i, (display.height () / 2) - 1, i / 8);
+		while (digitalRead (OLED_FR)) {}
 		display.display ();
 		delay (100);
 	}
@@ -440,7 +505,7 @@ void testdrawbitmap (void)
 
 void testanimate (const uint8_t* bitmap, uint8_t w, uint8_t h)
 {
-	int8_t f, icons[NUMFLAKES][3];
+	int16_t f, icons[NUMFLAKES][3];
 
 	// Initialize 'snowflake' positions
 	for (f = 0; f < NUMFLAKES; f++)
@@ -467,7 +532,7 @@ void testanimate (const uint8_t* bitmap, uint8_t w, uint8_t h)
 		}
 
 		display.display (); // Show the display buffer on the screen
-		delay (200); // Pause for 1/10 second
+		delay (50); // Pause for 1/10 second
 
 		// Then update coordinates of each flake...
 		for (f = 0; f < NUMFLAKES; f++)
