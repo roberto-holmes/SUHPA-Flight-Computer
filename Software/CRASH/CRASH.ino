@@ -61,10 +61,10 @@ int leds[] = {22, 21, 40, 39, 38, 37, 35, 0, 1, 2, 3, 4};
 #define led2 22
 
 // PWM range (Absolute max 588 to 2400 ish)
-const int vertMaxVal = 2400;
-const int vertMinVal = 600;
-const int horizMaxVal = 2400;
-const int horizMinVal = 600;
+const int vertMaxVal = 2200;
+const int vertMinVal = 750;
+const int horizMaxVal = 2200;
+const int horizMinVal = 750;
 float vertZero, horizZero;
 
 // Stick input range

@@ -44,11 +44,9 @@ void loop()
 		memcpy(&ele, package + 0, 4);
 		memcpy(&rud, package + 4, 4);
 
-		// eleAngle = constrain(map(ele, 100, 900, 0, 180), 0, 180);
-		// rudAngle = constrain(map(rud, 106, 913, 0, 180), 0, 180);
-		// servoEle.write(eleAngle);
-		// servoRud.write(rudAngle);
-		//Serial.print("Elevator = ");Serial.print(eleAngle);Serial.print("; Rudder = ");Serial.print(rudAngle);Serial.print("\n");
+		servoEle.write(ele);
+		servoRud.write(rud);
+
 		Serial.print(ele);
 		Serial.print("\t");
 		Serial.print(rud);
