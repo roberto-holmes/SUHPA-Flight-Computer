@@ -1,3 +1,4 @@
+#include "Display.h"
 #include <Adafruit_BMP3XX.h>
 #include <Adafruit_BNO055.h>
 #include <EEPROM.h>
@@ -118,6 +119,8 @@ byte package[PACKAGE_SIZE];
 // the setup routine runs once when you press reset:
 void setup()
 {
+	Display::Init ();
+
 	pinMode(vertMin, OUTPUT);
 	pinMode(vertLow, OUTPUT);
 	pinMode(vertMid, OUTPUT);
@@ -199,8 +202,8 @@ void setup()
 void loop()
 {
 	// Read Stick inputs and normalise
-	float vertStickValue = -2.0 * (analogRead(stickVert) - vertStickZero) / (vertStickMax - vertStickMin);
-	float horizStickValue = 2.0 * (analogRead(stickHoriz) - horizStickZero) / (horizStickMax - horizStickMin);
+	float vertStickValue = 2.0 * (analogRead (stickVert) - vertStickZero) / (vertStickMax - vertStickMin);
+	float horizStickValue = -2.0 * (analogRead (stickHoriz) - horizStickZero) / (horizStickMax - horizStickMin);
 
 	// Calculate PWM values in both axis by combining stick inputs with trim
 	float tempVertVal = vertStickValue * vertStickRes + vertTrim * vertRes + vertZero;
@@ -301,6 +304,8 @@ void loop()
 	{
 		trimRightDown = false;
 	}
+
+	Display::Update (vertVal, horizVal, horizMinVal, horizMaxVal, vertMinVal, vertMaxVal);
 }
 
 void beep(int level)
