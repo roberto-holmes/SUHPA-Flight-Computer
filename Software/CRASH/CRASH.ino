@@ -1,4 +1,3 @@
-#include "Display.h"
 #include <Adafruit_BMP3XX.h>
 #include <Adafruit_BNO055.h>
 #include <EEPROM.h>
@@ -14,6 +13,8 @@
 #include <stdint.h>
 #include <usb_serial.h>
 #include <util/crc16.h>
+
+#include "Display.h"
 
 int leds[] = {22, 21, 40, 39, 38, 37, 35, 0, 1, 2, 3, 4};
 
@@ -58,8 +59,13 @@ int leds[] = {22, 21, 40, 39, 38, 37, 35, 0, 1, 2, 3, 4};
 
 // Other outputs
 #define buzzer 33
-#define led1 21
-#define led2 22
+#define led1 22
+#define led2 21
+
+// Values for battery voltage calculations
+const float v100 = 3 * 4.2;
+const float v0 = 3 * 3.5;
+const float batVoltFactor = (3.3 * 4.09) / 1024;
 
 // PWM range (Absolute max 588 to 2400 ish)
 const int vertMaxVal = 2200;
@@ -119,7 +125,7 @@ byte package[PACKAGE_SIZE];
 // the setup routine runs once when you press reset:
 void setup()
 {
-	Display::Init ();
+	Display::Init();
 
 	pinMode(vertMin, OUTPUT);
 	pinMode(vertLow, OUTPUT);
@@ -141,6 +147,8 @@ void setup()
 
 	pinMode(stickVert, INPUT);
 	pinMode(stickHoriz, INPUT);
+
+	pinMode(batSense, INPUT);
 
 	// Ensure trim LEDs are off
 	digitalWrite(vertMin, LOW);
@@ -201,9 +209,17 @@ void setup()
 // the loop routine runs over and over again forever:
 void loop()
 {
+	// Calculate battery state
+	float batVoltage = analogRead(batSense) * batVoltFactor;
+	float batPercent = constrain(map(batVoltage, v0, v100, 0.0, 1.0), 0.0, 1.0);
+	if (batPercent < .25)
+		digitalWrite(led1, HIGH);
+	else
+		digitalWrite(led1, LOW);
+
 	// Read Stick inputs and normalise
-	float vertStickValue = 2.0 * (analogRead (stickVert) - vertStickZero) / (vertStickMax - vertStickMin);
-	float horizStickValue = -2.0 * (analogRead (stickHoriz) - horizStickZero) / (horizStickMax - horizStickMin);
+	float vertStickValue = 2.0 * (analogRead(stickVert) - vertStickZero) / (vertStickMax - vertStickMin);
+	float horizStickValue = -2.0 * (analogRead(stickHoriz) - horizStickZero) / (horizStickMax - horizStickMin);
 
 	// Calculate PWM values in both axis by combining stick inputs with trim
 	float tempVertVal = vertStickValue * vertStickRes + vertTrim * vertRes + vertZero;
@@ -232,14 +248,16 @@ void loop()
 	// Serial.print(horizStickValue);
 	// Serial.print("\n");
 
-	Serial.print(tempVertVal);
-	Serial.print(" : ");
-	Serial.print(vertVal);
-	Serial.print("\t");
-	Serial.print(tempHorizVal);
-	Serial.print(" : ");
-	Serial.print(horizVal);
-	Serial.print("\n");
+	// Serial.print(tempVertVal);
+	// Serial.print(" : ");
+	// Serial.print(vertVal);
+	// Serial.print("\t");
+	// Serial.print(tempHorizVal);
+	// Serial.print(" : ");
+	// Serial.print(horizVal);
+	// Serial.print("\n");
+
+	Serial.println(batPercent);
 
 	delay(10);
 
@@ -305,7 +323,7 @@ void loop()
 		trimRightDown = false;
 	}
 
-	Display::Update (vertVal, horizVal, horizMinVal, horizMaxVal, vertMinVal, vertMaxVal);
+	Display::Update(vertVal, horizVal, horizMinVal, horizMaxVal, vertMinVal, vertMaxVal);
 }
 
 void beep(int level)
