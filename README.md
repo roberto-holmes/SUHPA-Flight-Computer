@@ -5,6 +5,7 @@ Currently divided into CRASH (Controls, Radio, and Avionics for Southampton HPA)
 ## Software
 TODO:
 - Read and store sensor data
+- Store trim values and sensor calibration in EEPROM
 - Monitor radio quality
 - Display battery level
 - Display status messages
