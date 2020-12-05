@@ -11,6 +11,7 @@ TODO:
 - Display status messages
 - Asynchronous beep
 - Varying frequency beep
+- Screensaver
 
 ## Hardware
 
