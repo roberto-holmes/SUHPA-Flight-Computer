@@ -62,6 +62,17 @@ int leds[] = {22, 21, 40, 39, 38, 37, 35, 0, 1, 2, 3, 4};
 #define led1 22
 #define led2 21
 
+// EEPROM
+// There are limited write cycles to any address in EEPROM
+// It should be about 100000 cycles, but in theory it coulbe be a problem
+// If so comment out this line to dissable it
+#define ENABLE_EEPROM
+
+// You can also change to a different address as the limitation is per address not total
+// Also these address need to be at least 4 apart as the trim values are integers (although they don't really need to be)
+#define EEPROM_VERT_TRIM_ADDRESS 0
+#define EEPROM_HORIZ_TRIM_ADDRESS 4
+
 // Values for battery voltage calculations
 const float v100 = 3 * 4.2;
 const float v0 = 3 * 3.5;
@@ -202,7 +213,9 @@ void setup()
 	//radio.setPayloadSize(PACKAGE_SIZE);
 	radio.stopListening();
 
-	updateVertTrim(0);
+	readFromEEPROM ();
+
+	updateVertTrim (0);
 	updateHorizTrim(0);
 }
 
@@ -335,10 +348,13 @@ void beep(int level)
 
 void updateVertTrim(int trimInput)
 {
-	if (vertTrim + trimInput <= vertSteps && vertTrim + trimInput >= -vertSteps)
+	if (trimInput != 0)
 	{
-		vertTrim += trimInput;
-		beep(0);
+		if (vertTrim + trimInput <= vertSteps && vertTrim + trimInput >= -vertSteps)
+		{
+			vertTrim += trimInput;
+			beep (0);
+		}
 	}
 
 	digitalWrite(vertMin, LOW);
@@ -357,14 +373,19 @@ void updateVertTrim(int trimInput)
 		digitalWrite(vertHigh, HIGH);
 	else if (vertTrim == vertSteps)
 		digitalWrite(vertMax, HIGH);
+
+	writeToEEPROM ();
 }
 
 void updateHorizTrim(int trimInput)
 {
-	if (horizTrim + trimInput <= horizSteps && horizTrim + trimInput >= -horizSteps)
+	if (trimInput != 0)
 	{
-		horizTrim += trimInput;
-		beep(0);
+		if (horizTrim + trimInput <= horizSteps && horizTrim + trimInput >= -horizSteps)
+		{
+			horizTrim += trimInput;
+			beep (0);
+		}
 	}
 
 	digitalWrite(horizMin, LOW);
@@ -382,7 +403,9 @@ void updateHorizTrim(int trimInput)
 	else if (horizTrim < horizSteps)
 		digitalWrite(horizHigh, HIGH);
 	else if (horizTrim == horizSteps)
-		digitalWrite(horizMax, HIGH);
+		digitalWrite (horizMax, HIGH);
+
+	writeToEEPROM ();
 }
 
 void transmit(float ele, float rud)
@@ -398,4 +421,52 @@ void transmit(float ele, float rud)
 	// }
 	// Serial.println();
 	radio.write(&package, PACKAGE_SIZE);
+}
+
+void readFromEEPROM ()
+{
+#ifdef ENABLE_EEPROM
+
+	// Read in the values
+	vertTrim = readIntToEEPROM (EEPROM_VERT_TRIM_ADDRESS);
+	horizTrim = readIntToEEPROM (EEPROM_HORIZ_TRIM_ADDRESS);
+
+	// Validate the values
+	// If they are not correct, give them default values
+	// This is needed if the EEPROM gets corrupted
+	if (vertTrim > vertSteps || vertTrim < -vertSteps) vertTrim = 0;
+	if (horizTrim > horizSteps || horizTrim < -horizSteps) horizTrim = 0;
+
+#endif // ENABLE_EEPROM
+}
+
+void writeToEEPROM ()
+{
+#ifdef ENABLE_EEPROM
+
+	writeIntToEEPROM (EEPROM_VERT_TRIM_ADDRESS, vertTrim);
+	writeIntToEEPROM (EEPROM_HORIZ_TRIM_ADDRESS, horizTrim);
+
+#endif // ENABLE_EEPROM
+}
+
+void writeIntToEEPROM (int address, int value)
+{
+	// Use the update method, so that we don't write to the EEPROM unless it is needed
+	EEPROM.update (address + 0, (byte) (value));
+	EEPROM.update (address + 1, (byte) (value >> 8));
+	EEPROM.update (address + 2, (byte) (value >> 16));
+	EEPROM.update (address + 3, (byte) (value >> 24));
+}
+
+int readIntToEEPROM (int address)
+{
+	int value = 0;
+
+	value |= EEPROM.read (address);
+	value |= EEPROM.read (address + 1) << 8;
+	value |= EEPROM.read (address + 2) << 16;
+	value |= EEPROM.read (address + 3) << 24;
+
+	return value;
 }
