@@ -1,16 +1,34 @@
 # SUHPA Avionics
 
-Currently divided into BaseCom that receives input from the pilot and sends it to Pod that controls the servos.
+Currently divided into CRASH (Controls, Radio, and Avionics for Southampton HPA) that receives input from the pilot and sends it to Pod that controls the servos.
 
-BaseCom is currently a stripboard design
+## Software
+TODO:
+- Read and store sensor data
+- Store trim values and sensor calibration in EEPROM
+- Monitor radio quality
+- Display battery level
+- Display status messages
+- Asynchronous beep
+- Varying frequency beep
+- Screensaver
 
-Pod v1.0
+## Hardware
+
+### CRASH 
+
+v1.0
+- Status: Completed
+- Issues:
+   * Stress relief holes for battery cables are too small
+   * Middle support holes are not required
+   * Circle cutout is not quite aligned
+   * Square cutout could have more clearance on the left
+
+### Pod
+v1.0
 - Status: Completed
 - Issues: 
-    * Short between 5v_Servo and GND at the BEC connector
-    * Insufficient spacing between buzzer and balance connector
-    * Mosfet required on balance connector to allow for full power off
-
-Pod v1.1
-- Status: Development
-- Changes: Fixed short
+   * Short between 5v_Servo and GND at the BEC connector
+   * Insufficient spacing between buzzer and balance connector
+   * Balance connector requires removal or mosfet to allow for full power off
