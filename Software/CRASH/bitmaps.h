@@ -1,3 +1,20 @@
+#define BatterBar_width 4
+#define BatterBar_height 11
+
+const uint8_t PROGMEM BatterBar_data[] = {
+	B11110000,
+	B11110000,
+	B11110000,
+	B11110000,
+	B11110000,
+	B11110000,
+	B11110000,
+	B11110000,
+	B11110000,
+	B11110000,
+	B11110000,
+};
+
 #define SUHPALogo_width 123
 #define SUHPALogo_height 64
 

@@ -323,7 +323,7 @@ void loop()
 		trimRightDown = false;
 	}
 
-	Display::Update(vertVal, horizVal, horizMinVal, horizMaxVal, vertMinVal, vertMaxVal);
+	Display::Update (vertVal, horizVal, horizMinVal, horizMaxVal, vertMinVal, vertMaxVal, horizTrim, vertTrim, batPercent);
 }
 
 void beep(int level)

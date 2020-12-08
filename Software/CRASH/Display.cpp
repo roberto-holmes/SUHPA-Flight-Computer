@@ -7,6 +7,12 @@
 #include "Adafruit_SSD1362.h"
 #include "bitmaps.h"
 
+#define BATTER_BAR_POSITION_X 197
+#define BATTER_BAR_POSITION_Y 5
+
+#define BATTER_TEXT_POSITION_X 225
+#define BATTER_TEXT_POSITION_Y 7
+
 #define XY_PLOT_CENTER_X 171
 #define XY_PLOT_CENTER_Y 40
 #define XY_PLOT_SIZE 18
@@ -58,16 +64,20 @@ void Display::Init ()
 	}
 
 	mergeTailTime = millis () + XY_PLOT_TAIL_MERGE_DELAY;
+
+	display.setTextSize (1); // Normal 1:1 pixel scale
+	display.setTextColor (SSD1362_WHITE); // Draw white text
+	display.setCursor (0, 0); // Start at top-left corner
+	display.cp437 (true); // Use full 256 char 'Code Page 437' font
 }
 
-void Display::Update (int vertVal, int horizVal, int horizMinVal, int horizMaxVal, int vertMinVal, int vertMaxVal)
+void Display::Update (int vertVal, int horizVal, int horizMinVal, int horizMaxVal, int vertMinVal, int vertMaxVal, int horizTrim, int vertTrim, float batPercent)
 {
 	display.clearDisplay ();
 	display.drawGrayscaleBitmap (0, 0, baseUI_data, baseUI_width, baseUI_height);
 
-	// int vertVal = 0;
-	// int horizVal = 0;
 
+	// Stick bars
 	float horizValPercent = constrain ((float)(horizVal - ((horizMaxVal + horizMinVal) / 2)) * 2.0 / (float)(horizMaxVal - horizMinVal), -1.0, 1.0);
 	float vertValPercent = constrain ((float)(vertVal - ((vertMaxVal + vertMinVal) / 2)) * 2.0 / (float)(vertMaxVal - vertMinVal), -1.0, 1.0);
 
@@ -95,6 +105,8 @@ void Display::Update (int vertVal, int horizVal, int horizMinVal, int horizMaxVa
 		}
 	}
 
+	// Trim
+
 	//Final stick position
 	int outputX = XY_PLOT_CENTER_X + (int)(horizValPercent * XY_PLOT_SIZE);
 	int outputY = XY_PLOT_CENTER_Y - (int)(vertValPercent * XY_PLOT_SIZE);
@@ -121,6 +133,51 @@ void Display::Update (int vertVal, int horizVal, int horizMinVal, int horizMaxVa
 	display.drawPixel (outputX, outputY, SSD1362_WHITE);
 	display.drawPixel (outputX - 1, outputY, SSD1362_WHITE);
 	display.drawPixel (outputX, outputY - 1, SSD1362_WHITE);
+
+	// Battery
+	if (batPercent > 0.75)
+		display.drawBitmap (
+			BATTER_BAR_POSITION_X + (3 * (BatterBar_width + 1)),
+			BATTER_BAR_POSITION_Y,
+			BatterBar_data,
+			BatterBar_width,
+			BatterBar_height,
+			(int)(constrain (batPercent - 0.75, 0, 0.25) * 4 * 0x0f));
+
+	if (batPercent > 0.5)
+		display.drawBitmap (
+			BATTER_BAR_POSITION_X + (2 * (BatterBar_width  + 1)), 
+			BATTER_BAR_POSITION_Y, 
+			BatterBar_data, 
+			BatterBar_width, 
+			BatterBar_height, 
+			(int)(constrain (batPercent - 0.5, 0, 0.25) * 4 * 0x0f));
+
+	if (batPercent > 0.25)
+		display.drawBitmap (
+			BATTER_BAR_POSITION_X + BatterBar_width + 1, 
+			BATTER_BAR_POSITION_Y, 
+			BatterBar_data, 
+			BatterBar_width, 
+			BatterBar_height, 
+			(int)(constrain (batPercent - 0.25, 0, 0.25) * 4 * 0x0f));
+
+	display.drawBitmap (
+		BATTER_BAR_POSITION_X, 
+		BATTER_BAR_POSITION_Y, 
+		BatterBar_data, 
+		BatterBar_width, 
+		BatterBar_height, 
+		(int)(constrain (batPercent, 0, 0.25) * 4 * 0x0f));
+
+	int batValue = (int)(constrain (batPercent, 0.0, 1.0) * 100);
+
+	display.setCursor (BATTER_TEXT_POSITION_X, BATTER_TEXT_POSITION_Y);
+
+	display.write (((batValue / 100) % 10) + '0');
+	display.write (((batValue / 10) % 10) + '0');
+	display.write (((batValue) % 10) + '0');
+	display.write ('%');
 
 	while (digitalRead (OLED_FR)) {}
 	display.display ();
