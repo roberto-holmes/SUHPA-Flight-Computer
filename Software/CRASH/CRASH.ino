@@ -73,6 +73,10 @@ int leds[] = {22, 21, 40, 39, 38, 37, 35, 0, 1, 2, 3, 4};
 #define EEPROM_VERT_TRIM_ADDRESS 0
 #define EEPROM_HORIZ_TRIM_ADDRESS 4
 
+// Buzzer
+int beepStopTime = 0;
+bool beepOn = false;
+
 // Values for battery voltage calculations
 const float v100 = 3 * 4.2;
 const float v0 = 3 * 3.5;
@@ -222,27 +226,34 @@ void setup()
 // the loop routine runs over and over again forever:
 void loop()
 {
-	// Calculate battery state
-	float batVoltage = analogRead(batSense) * batVoltFactor;
-	float batPercent = constrain(map(batVoltage, v0, v100, 0.0, 1.0), 0.0, 1.0);
+	// Asynchronous beep
+	if (beepOn && millis () >= beepStopTime)
+	{
+		analogWrite (buzzer, 0);
+		beepOn = false;
+	}
+
+		// Calculate battery state
+	float batVoltage = analogRead (batSense) * batVoltFactor;
+	float batPercent = constrain (map (batVoltage, v0, v100, 0.0, 1.0), 0.0, 1.0);
 	if (batPercent < .25)
-		digitalWrite(led1, HIGH);
+		digitalWrite (led1, HIGH);
 	else
-		digitalWrite(led1, LOW);
+		digitalWrite (led1, LOW);
 
 	// Read Stick inputs and normalise
-	float vertStickValue = 2.0 * (analogRead(stickVert) - vertStickZero) / (vertStickMax - vertStickMin);
-	float horizStickValue = -2.0 * (analogRead(stickHoriz) - horizStickZero) / (horizStickMax - horizStickMin);
+	float vertStickValue = 2.0 * (analogRead (stickVert) - vertStickZero) / (vertStickMax - vertStickMin);
+	float horizStickValue = -2.0 * (analogRead (stickHoriz) - horizStickZero) / (horizStickMax - horizStickMin);
 
 	// Calculate PWM values in both axis by combining stick inputs with trim
 	float tempVertVal = vertStickValue * vertStickRes + vertTrim * vertRes + vertZero;
 	float tempHorizVal = horizStickValue * horizStickRes + horizTrim * horizRes + horizZero;
 
-	vertStickValue = constrain(vertStickValue, -1, 1);
-	horizStickValue = constrain(horizStickValue, -1, 1);
+	vertStickValue = constrain (vertStickValue, -1, 1);
+	horizStickValue = constrain (horizStickValue, -1, 1);
 
-	vertVal = constrain(tempVertVal, vertMinVal, vertMaxVal);
-	horizVal = constrain(tempHorizVal, horizMinVal, horizMaxVal);
+	vertVal = constrain (tempVertVal, vertMinVal, vertMaxVal);
+	horizVal = constrain (tempHorizVal, horizMinVal, horizMaxVal);
 
 	// Debug PWM values
 	// Serial.print(vertVal);
@@ -250,7 +261,7 @@ void loop()
 	// Serial.println(horizVal);
 
 	// Transmit PWM values
-	transmit(vertVal, horizVal);
+	transmit (vertVal, horizVal);
 
 	// Serial.print(analogRead(stickVert));
 	// Serial.print(" : ");
@@ -270,20 +281,20 @@ void loop()
 	// Serial.print(horizVal);
 	// Serial.print("\n");
 
-	Serial.println(batPercent);
+	Serial.println (batPercent);
 
-	delay(10);
+	delay (10);
 
 	// Check if button is being pressed
-	if (digitalRead(trimUp))
+	if (digitalRead (trimUp))
 	{
 		// Debounce and check if the button is being held down
-		if ((!trimUpDown || (vertTrim != 0 && millis() > trimUpLastPressTime + holdDelay) || (vertTrim == 0 && millis() > trimUpLastPressTime + holdDelayCentre)) && millis() > trimUpLastPressTime + debounceDelay)
+		if ((!trimUpDown || (vertTrim != 0 && millis () > trimUpLastPressTime + holdDelay) || (vertTrim == 0 && millis () > trimUpLastPressTime + holdDelayCentre)) && millis () > trimUpLastPressTime + debounceDelay)
 		{
-			trimUpLastPressTime = millis();
+			trimUpLastPressTime = millis ();
 			trimUpDown = true;
 			// vertTrim++;
-			updateVertTrim(1);
+			updateVertTrim (1);
 		}
 	}
 	else
@@ -339,11 +350,11 @@ void loop()
 	Display::Update (vertVal, horizVal, horizMinVal, horizMaxVal, vertMinVal, vertMaxVal, horizTrim, vertTrim, batPercent);
 }
 
-void beep(int level)
+void beep (int level, int time)
 {
-	analogWrite(buzzer, 64 + (level * 16));
-	delay(100);
-	analogWrite(buzzer, 0);
+	analogWrite (buzzer, 64 + (level * 16));
+	beepStopTime = millis () + time;
+	beepOn = true;
 }
 
 void updateVertTrim(int trimInput)
@@ -353,7 +364,7 @@ void updateVertTrim(int trimInput)
 		if (vertTrim + trimInput <= vertSteps && vertTrim + trimInput >= -vertSteps)
 		{
 			vertTrim += trimInput;
-			beep (0);
+			beep (0, 100);
 		}
 	}
 
@@ -384,7 +395,7 @@ void updateHorizTrim(int trimInput)
 		if (horizTrim + trimInput <= horizSteps && horizTrim + trimInput >= -horizSteps)
 		{
 			horizTrim += trimInput;
-			beep (0);
+			beep (0, 100);
 		}
 	}
 
