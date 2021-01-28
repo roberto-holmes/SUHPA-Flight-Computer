@@ -9,6 +9,7 @@
 #define radioCSN 8
 #define radioINT 25
 #define PACKAGE_SIZE 8
+#define ACK_PAYLOAD_SIZE 2
 
 Servo servoEle, servoRud;
 
@@ -18,9 +19,9 @@ int rudPin = 6;	 //Pins 5 and 6 for pod board
 float eleAngle, rudAngle;
 
 RF24 radio(radioCE, radioCSN);
-const byte address[6] = "00001";
-
+uint8_t address[][6] = {"1Node", "2Node"};
 byte package[PACKAGE_SIZE];
+byte ackPayload[ACK_PAYLOAD_SIZE] = "E";
 
 float rud, ele;
 
@@ -28,9 +29,25 @@ void setup()
 {
 	Serial.begin(115200);
 	radio.begin();
-	radio.openReadingPipe(0, address);
-	// radio.setPALevel(RF24_PA_MIN);
-	//radio.setPayloadSize(PACKAGE_SIZE);
+
+	//! For some reason, higher values lead to greater packet loss
+	//! RF24_PA_LOW isn't powerful enough for consistent packets
+	radio.setPALevel(1);
+
+	// Set up ack payloads
+	radio.enableDynamicPayloads();
+	radio.enableAckPayload();
+
+	// Set up pipes
+	radio.openWritingPipe(address[1]);
+	radio.openReadingPipe(1, address[0]);
+
+	// setup the ACK payload & load the first response into the FIFO
+	// memcpy(ackPayload, "E", 2);	 // set the payload message
+	// load the payload for the first received transmission on pipe 0
+	radio.writeAckPayload(1, &ackPayload, sizeof(ackPayload));
+
+	// Put radio in RX mode
 	radio.startListening();
 
 	servoEle.attach(elePin);
@@ -38,9 +55,13 @@ void setup()
 }
 void loop()
 {
-	if (radio.available())
-	{
-		radio.read(&package, PACKAGE_SIZE);
+	uint8_t pipe;
+	if (radio.available(&pipe))
+	{  // is there a payload? get the pipe number that recieved it
+		uint8_t bytes = radio.getDynamicPayloadSize();	// get the size of the payload
+		char received[8];
+		radio.read(&package, sizeof(package));	// get incoming payload
+
 		memcpy(&ele, package + 0, 4);
 		memcpy(&rud, package + 4, 4);
 
@@ -51,5 +72,8 @@ void loop()
 		Serial.print("\t");
 		Serial.print(rud);
 		Serial.print("\n");
+
+		// load the payload for the first received transmission on pipe 0
+		radio.writeAckPayload(1, &ackPayload, sizeof(ackPayload));
 	}
 }

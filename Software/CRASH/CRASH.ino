@@ -50,6 +50,9 @@ int leds[] = {22, 21, 40, 39, 38, 37, 35, 0, 1, 2, 3, 4};
 #define radioCSN 26
 #define radioINT 25
 #define PACKAGE_SIZE 8
+#define ACK_PAYLOAD_SIZE 2
+#define PACKET_LOSS_SAMPLE_SIZE 100
+#define PING_SAMPLE_SIZE 100
 
 // Display
 #define displayFR 41
@@ -64,7 +67,7 @@ int leds[] = {22, 21, 40, 39, 38, 37, 35, 0, 1, 2, 3, 4};
 
 // EEPROM
 // There are limited write cycles to any address in EEPROM
-// It should be about 100000 cycles, but in theory it coulbe be a problem
+// It should be about 100000 cycles, but in theory it could be be a problem
 // If so comment out this line to dissable it
 #define ENABLE_EEPROM
 
@@ -134,8 +137,23 @@ const unsigned long holdDelayCentre = 500;
 
 // Radio Setup
 RF24 radio(radioCE, radioCSN);
-const byte address[6] = "00001";
+uint8_t address[][6] = {"1Node", "2Node"};
 byte package[PACKAGE_SIZE];
+
+// Variables frequency of communication
+const unsigned long txInterval = 100;
+unsigned long lastMillis;
+
+// Variables for calculating packet loss
+bool ack[PACKET_LOSS_SAMPLE_SIZE];
+int ackPos = 0;
+int truers = 0;
+float packetLoss;  // Fraction of packets that don't receive ack
+
+// Variables for calculating return trip time
+unsigned long pingArray[PACKET_LOSS_SAMPLE_SIZE];
+int pingPos = 0;
+float ping;	 // Average return trip time in ms
 
 // the setup routine runs once when you press reset:
 void setup()
@@ -211,15 +229,33 @@ void setup()
 	vertStickRes = vertStickMultiplier * (vertMaxVal - vertMinVal) / 2.0;
 	horizStickRes = horizStickMultiplier * (horizMaxVal - horizMinVal) / 2.0;
 
-	radio.begin();
-	radio.openWritingPipe(address);
+	if (!radio.begin())
+	{
+		// Radio is not responding -> maybe hang and display message
+	}
+
+	// Initialise ack array
+	for (int i = 0; i < PACKET_LOSS_SAMPLE_SIZE; i++)
+		ack[i] = true;
+
 	radio.setPALevel(RF24_PA_MAX);
-	//radio.setPayloadSize(PACKAGE_SIZE);
+
+	// Set up ack payloads
+	radio.enableDynamicPayloads();
+	radio.enableAckPayload();
+
+	// Set up pipes
+	radio.openWritingPipe(address[0]);
+	radio.openReadingPipe(1, address[1]);
+
+	// Put radio in TX mode
 	radio.stopListening();
 
-	readFromEEPROM ();
+	lastMillis = millis();
 
-	updateVertTrim (0);
+	readFromEEPROM();
+
+	updateVertTrim(0);
 	updateHorizTrim(0);
 }
 
@@ -227,41 +263,38 @@ void setup()
 void loop()
 {
 	// Asynchronous beep
-	if (beepOn && millis () >= beepStopTime)
+	if (beepOn && millis() >= beepStopTime)
 	{
-		analogWrite (buzzer, 0);
+		analogWrite(buzzer, 0);
 		beepOn = false;
 	}
 
-		// Calculate battery state
-	float batVoltage = analogRead (batSense) * batVoltFactor;
-	float batPercent = constrain (map (batVoltage, v0, v100, 0.0, 1.0), 0.0, 1.0);
+	// Calculate battery state
+	float batVoltage = analogRead(batSense) * batVoltFactor;
+	float batPercent = constrain(map(batVoltage, v0, v100, 0.0, 1.0), 0.0, 1.0);
 	if (batPercent < .25)
-		digitalWrite (led1, HIGH);
+		digitalWrite(led1, HIGH);
 	else
-		digitalWrite (led1, LOW);
+		digitalWrite(led1, LOW);
 
 	// Read Stick inputs and normalise
-	float vertStickValue = 2.0 * (analogRead (stickVert) - vertStickZero) / (vertStickMax - vertStickMin);
-	float horizStickValue = -2.0 * (analogRead (stickHoriz) - horizStickZero) / (horizStickMax - horizStickMin);
+	float vertStickValue = 2.0 * (analogRead(stickVert) - vertStickZero) / (vertStickMax - vertStickMin);
+	float horizStickValue = -2.0 * (analogRead(stickHoriz) - horizStickZero) / (horizStickMax - horizStickMin);
 
 	// Calculate PWM values in both axis by combining stick inputs with trim
 	float tempVertVal = vertStickValue * vertStickRes + vertTrim * vertRes + vertZero;
 	float tempHorizVal = horizStickValue * horizStickRes + horizTrim * horizRes + horizZero;
 
-	vertStickValue = constrain (vertStickValue, -1, 1);
-	horizStickValue = constrain (horizStickValue, -1, 1);
+	vertStickValue = constrain(vertStickValue, -1, 1);
+	horizStickValue = constrain(horizStickValue, -1, 1);
 
-	vertVal = constrain (tempVertVal, vertMinVal, vertMaxVal);
-	horizVal = constrain (tempHorizVal, horizMinVal, horizMaxVal);
+	vertVal = constrain(tempVertVal, vertMinVal, vertMaxVal);
+	horizVal = constrain(tempHorizVal, horizMinVal, horizMaxVal);
 
 	// Debug PWM values
 	// Serial.print(vertVal);
 	// Serial.print(",");
 	// Serial.println(horizVal);
-
-	// Transmit PWM values
-	transmit (vertVal, horizVal);
 
 	// Serial.print(analogRead(stickVert));
 	// Serial.print(" : ");
@@ -281,20 +314,18 @@ void loop()
 	// Serial.print(horizVal);
 	// Serial.print("\n");
 
-	Serial.println (batPercent);
-
-	delay (10);
+	// Serial.println(batPercent);
 
 	// Check if button is being pressed
-	if (digitalRead (trimUp))
+	if (digitalRead(trimUp))
 	{
 		// Debounce and check if the button is being held down
-		if ((!trimUpDown || (vertTrim != 0 && millis () > trimUpLastPressTime + holdDelay) || (vertTrim == 0 && millis () > trimUpLastPressTime + holdDelayCentre)) && millis () > trimUpLastPressTime + debounceDelay)
+		if ((!trimUpDown || (vertTrim != 0 && millis() > trimUpLastPressTime + holdDelay) || (vertTrim == 0 && millis() > trimUpLastPressTime + holdDelayCentre)) && millis() > trimUpLastPressTime + debounceDelay)
 		{
-			trimUpLastPressTime = millis ();
+			trimUpLastPressTime = millis();
 			trimUpDown = true;
 			// vertTrim++;
-			updateVertTrim (1);
+			updateVertTrim(1);
 		}
 	}
 	else
@@ -347,13 +378,20 @@ void loop()
 		trimRightDown = false;
 	}
 
-	Display::Update (vertVal, horizVal, horizMinVal, horizMaxVal, vertMinVal, vertMaxVal, horizTrim, vertTrim, batPercent);
+	unsigned long currentMillis = millis();
+	if (currentMillis - lastMillis > txInterval)
+	{
+		lastMillis = currentMillis;
+		// Transmit PWM values
+		transmit(vertVal, horizVal);
+		Display::Update(vertVal, horizVal, horizMinVal, horizMaxVal, vertMinVal, vertMaxVal, horizTrim, vertTrim, batPercent);
+	}
 }
 
-void beep (int level, int time)
+void beep(int level, int time)
 {
-	analogWrite (buzzer, 64 + (level * 16));
-	beepStopTime = millis () + time;
+	analogWrite(buzzer, 64 + (level * 16));
+	beepStopTime = millis() + time;
 	beepOn = true;
 }
 
@@ -364,7 +402,7 @@ void updateVertTrim(int trimInput)
 		if (vertTrim + trimInput <= vertSteps && vertTrim + trimInput >= -vertSteps)
 		{
 			vertTrim += trimInput;
-			beep (0, 100);
+			beep(0, 100);
 		}
 	}
 
@@ -385,7 +423,7 @@ void updateVertTrim(int trimInput)
 	else if (vertTrim == vertSteps)
 		digitalWrite(vertMax, HIGH);
 
-	writeToEEPROM ();
+	writeToEEPROM();
 }
 
 void updateHorizTrim(int trimInput)
@@ -395,7 +433,7 @@ void updateHorizTrim(int trimInput)
 		if (horizTrim + trimInput <= horizSteps && horizTrim + trimInput >= -horizSteps)
 		{
 			horizTrim += trimInput;
-			beep (0, 100);
+			beep(0, 100);
 		}
 	}
 
@@ -414,9 +452,9 @@ void updateHorizTrim(int trimInput)
 	else if (horizTrim < horizSteps)
 		digitalWrite(horizHigh, HIGH);
 	else if (horizTrim == horizSteps)
-		digitalWrite (horizMax, HIGH);
+		digitalWrite(horizMax, HIGH);
 
-	writeToEEPROM ();
+	writeToEEPROM();
 }
 
 void transmit(float ele, float rud)
@@ -424,23 +462,75 @@ void transmit(float ele, float rud)
 	memcpy(package + 0, &ele, 4);
 	memcpy(package + 4, &rud, 4);
 
-	// for (int i = 0; i < PACKAGE_SIZE; i++)
-	// {
-	// 	// Serial.print("Radio: ");
-	// 	Serial.print(package[i]);
-	// 	Serial.print(" ");
-	// }
-	// Serial.println();
-	radio.write(&package, PACKAGE_SIZE);
+	unsigned long start_timer = micros();  // start the timer
+	bool report = radio.write(&package, PACKAGE_SIZE);	// transmit & save the report
+	unsigned long end_timer = micros();	 // end the timer
+
+	if (report)
+	{
+		Serial.print(F("Transmission successful! "));  // payload was delivered
+		// Serial.print(F("Time to transmit = "));
+		// Serial.println(end_timer - start_timer);  // print the timer result
+		// Serial.print(F(" us. Sent: "));
+		// Serial.print(payload);	// print the outgoing message
+
+		ack[ackPos] = true;
+		pingArray[pingPos++] = end_timer - start_timer;
+		pingPos %= PING_SAMPLE_SIZE;
+
+		uint8_t pipe;
+		if (radio.available(&pipe))
+		{  // is there an ACK payload? grab the pipe number that received it
+			byte received[ACK_PAYLOAD_SIZE];
+			radio.read(&received, sizeof(received));  // get incoming ACK payload
+			// Serial.print(F(" Received "));
+			// Serial.print(radio.getDynamicPayloadSize());  // print incoming payload size
+			// Serial.print(F(" bytes on pipe "));
+			// Serial.print(pipe);	 // print pipe number that received the ACK
+			// Serial.print(F(": "));
+			// Serial.println(received);
+		}
+		else
+		{
+			Serial.print(F("Received: an empty ACK packet, "));	 // empty ACK packet received
+		}
+	}
+	else
+	{
+		Serial.print(F("Transmission failed or timed out, "));	// payload was not delivered
+		ack[ackPos] = false;
+	}
+
+	// Calculate average ping over sample size
+	ping = 0;
+	for (int i = 0; i < PING_SAMPLE_SIZE; i++)
+		ping += pingArray[i];
+	ping /= (float)PING_SAMPLE_SIZE;
+	ping /= 1000.;	// Convert from us to ms;
+
+	// Calculate packet loss over sample size
+	++ackPos %= PACKET_LOSS_SAMPLE_SIZE;
+	truers = 0;
+	for (int i = 0; i < PACKET_LOSS_SAMPLE_SIZE; i++)
+	{
+		if (ack[i])
+			truers++;
+	}
+	packetLoss = 1 - (float)truers / (float)PACKET_LOSS_SAMPLE_SIZE;
+
+	Serial.print("Packet Loss: ");
+	Serial.print(packetLoss);
+	Serial.print(", Ping: ");
+	Serial.println(ping);
 }
 
-void readFromEEPROM ()
+void readFromEEPROM()
 {
 #ifdef ENABLE_EEPROM
 
 	// Read in the values
-	vertTrim = readIntToEEPROM (EEPROM_VERT_TRIM_ADDRESS);
-	horizTrim = readIntToEEPROM (EEPROM_HORIZ_TRIM_ADDRESS);
+	vertTrim = readIntToEEPROM(EEPROM_VERT_TRIM_ADDRESS);
+	horizTrim = readIntToEEPROM(EEPROM_HORIZ_TRIM_ADDRESS);
 
 	// Validate the values
 	// If they are not correct, give them default values
@@ -448,36 +538,36 @@ void readFromEEPROM ()
 	if (vertTrim > vertSteps || vertTrim < -vertSteps) vertTrim = 0;
 	if (horizTrim > horizSteps || horizTrim < -horizSteps) horizTrim = 0;
 
-#endif // ENABLE_EEPROM
+#endif	// ENABLE_EEPROM
 }
 
-void writeToEEPROM ()
+void writeToEEPROM()
 {
 #ifdef ENABLE_EEPROM
 
-	writeIntToEEPROM (EEPROM_VERT_TRIM_ADDRESS, vertTrim);
-	writeIntToEEPROM (EEPROM_HORIZ_TRIM_ADDRESS, horizTrim);
+	writeIntToEEPROM(EEPROM_VERT_TRIM_ADDRESS, vertTrim);
+	writeIntToEEPROM(EEPROM_HORIZ_TRIM_ADDRESS, horizTrim);
 
-#endif // ENABLE_EEPROM
+#endif	// ENABLE_EEPROM
 }
 
-void writeIntToEEPROM (int address, int value)
+void writeIntToEEPROM(int address, int value)
 {
 	// Use the update method, so that we don't write to the EEPROM unless it is needed
-	EEPROM.update (address + 0, (byte) (value));
-	EEPROM.update (address + 1, (byte) (value >> 8));
-	EEPROM.update (address + 2, (byte) (value >> 16));
-	EEPROM.update (address + 3, (byte) (value >> 24));
+	EEPROM.update(address + 0, (byte)(value));
+	EEPROM.update(address + 1, (byte)(value >> 8));
+	EEPROM.update(address + 2, (byte)(value >> 16));
+	EEPROM.update(address + 3, (byte)(value >> 24));
 }
 
-int readIntToEEPROM (int address)
+int readIntToEEPROM(int address)
 {
 	int value = 0;
 
-	value |= EEPROM.read (address);
-	value |= EEPROM.read (address + 1) << 8;
-	value |= EEPROM.read (address + 2) << 16;
-	value |= EEPROM.read (address + 3) << 24;
+	value |= EEPROM.read(address);
+	value |= EEPROM.read(address + 1) << 8;
+	value |= EEPROM.read(address + 2) << 16;
+	value |= EEPROM.read(address + 3) << 24;
 
 	return value;
 }
