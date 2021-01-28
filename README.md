@@ -5,13 +5,12 @@ Currently divided into CRASH (Controls, Radio, and Avionics for Southampton HPA)
 ## Software
 TODO:
 - Read and store sensor data
-- Store trim values and sensor calibration in EEPROM
-- Monitor radio quality
-- Display battery level
+- Store sensor calibration in EEPROM
 - Display status messages
-- Asynchronous beep
 - Varying frequency beep
 - Screensaver
+- Invert controls
+- Divide trim steps by 10
 
 ## Hardware
 
@@ -31,4 +30,4 @@ v1.0
 - Issues: 
    * Short between 5v_Servo and GND at the BEC connector
    * Insufficient spacing between buzzer and balance connector
-   * Balance connector requires removal or mosfet to allow for full power off
+   * Balance connector keeps board powered (should be replaced with just measuring the voltage of V_bat)
