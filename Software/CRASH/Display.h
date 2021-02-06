@@ -15,4 +15,10 @@ private:
 	static int xyPlotPositionY[DISPLAY_XY_PLOT_BUFFER_SIZE];
 	static int stickPositionBufferHead;
 	static uint32_t mergeTailTime;
+
+	static int lastVertVal;
+	static int lastHorizVal;
+	static uint32_t lastUpdateMillis;
+	static const uint32_t displayTurnOffTime = 30000;
+	static const int maxValueDelta = 10;
 };
