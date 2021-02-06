@@ -180,6 +180,7 @@ SdExFat sdio;
 ExFile sdFile;
 char* fileName = NULL;
 bool sdCardInitialised = false;
+SdioConfig sdConfig = SdioConfig ();
 
 // the setup routine runs once when you press reset:
 void setup()
@@ -822,7 +823,7 @@ char getNumbersCharacter (uint8_t value)
 void initSD ()
 {
 	sdio.chvol ();
-	if (sdio.begin (SdioConfig ()))
+	if (sdio.begin (sdConfig))
 	{
 		sdCardInitialised = true;
 	}
@@ -836,22 +837,29 @@ void initSD ()
 
 bool saveCurrentDataRecord ()
 {
-	initSD ();
-	if (!isFile ()) startNewFile ();
-
-	if (!sdFile.isOpen ())
+	//initSD ();
+	if (sdCardInitialised)
 	{
-		if (!sdFile.open (fileName, O_APPEND | O_RDWR | O_CREAT))
+		if (!isFile ()) startNewFile ();
+
+		if (!sdFile.isOpen ())
 		{
-			Serial.print ("Failed to open file with error: ");
-			Serial.println (sdFile.getError ());
-			sdCardInitialised = false;
-			return false;
+			if (!sdFile.open (fileName, O_APPEND | O_RDWR | O_CREAT))
+			{
+				Serial.print ("Failed to open file with error: ");
+				Serial.println (sdFile.getError ());
+				sdCardInitialised = false;
+				return false;
+			}
 		}
+
+		currentSensorData.saveData (&sdFile);
+		sdFile.close ();
+
+		return true;
 	}
-
-	currentSensorData.saveData(&sdFile);
-	sdFile.close ();
-
-	return true;
+	else
+	{
+		return false;
+	}
 }

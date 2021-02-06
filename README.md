@@ -8,7 +8,7 @@ TODO:
 - Varying frequency beep
 - Invert controls
 - Divide trim steps by 10
-- Fix lag when SD card disconnects
+- SD card doesn't reinitialize if it disconects as this would cause the device to only transmit packets every couple of seconds
 
 ## Hardware
 
