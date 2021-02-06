@@ -13,6 +13,9 @@
 #define BATTER_TEXT_POSITION_X 225
 #define BATTER_TEXT_POSITION_Y 7
 
+#define TEXT_LINE_POSITION_X 7
+#define TEXT_LINE_POSITION_Y 7
+
 #define XY_PLOT_CENTER_X 171
 #define XY_PLOT_CENTER_Y 40
 #define XY_PLOT_SIZE 18
@@ -34,7 +37,7 @@
 #define OLED_RESET 16
 #define OLED_FR 20
 
-Adafruit_SSD1362 display (SCREEN_WIDTH, SCREEN_HEIGHT, &SPI, OLED_DC, OLED_RESET, OLED_CS);
+						  Adafruit_SSD1362 display (SCREEN_WIDTH, SCREEN_HEIGHT, &SPI, OLED_DC, OLED_RESET, OLED_CS);
 
 int Display::xyPlotPositionX[DISPLAY_XY_PLOT_BUFFER_SIZE];
 int Display::xyPlotPositionY[DISPLAY_XY_PLOT_BUFFER_SIZE];
@@ -71,7 +74,7 @@ void Display::Init ()
 	display.cp437 (true); // Use full 256 char 'Code Page 437' font
 }
 
-void Display::Update (int vertVal, int horizVal, int horizMinVal, int horizMaxVal, int vertMinVal, int vertMaxVal, int horizTrim, int vertTrim, float batPercent)
+void Display::Update (int vertVal, int horizVal, int horizMinVal, int horizMaxVal, int vertMinVal, int vertMaxVal, int horizTrim, int vertTrim, float batPercent, float ping, float packetLoss, bool sdConencted)
 {
 	display.clearDisplay ();
 	display.drawGrayscaleBitmap (0, 0, baseUI_data, baseUI_width, baseUI_height);
@@ -178,6 +181,44 @@ void Display::Update (int vertVal, int horizVal, int horizMinVal, int horizMaxVa
 	display.write (((batValue / 10) % 10) + '0');
 	display.write (((batValue) % 10) + '0');
 	display.write ('%');
+
+	display.setCursor (TEXT_LINE_POSITION_X, TEXT_LINE_POSITION_Y);
+
+	display.write ("Ping:");
+	int pingMicros = (int)(ping * 1000);
+	if (pingMicros >= 10000)
+		display.write (((pingMicros / 10000) % 10) + '0');
+	else
+		display.write (" ");
+
+	if (pingMicros >= 1000)
+		display.write (((pingMicros / 1000) % 10) + '0');
+	else
+		display.write (" ");
+
+	if (pingMicros >= 100)
+		display.write (((pingMicros / 100) % 10) + '0');
+	else
+		display.write (" ");
+
+	if (pingMicros >= 10)
+		display.write (((pingMicros / 10) % 10) + '0');
+	else
+		display.write (" ");
+	display.write (((pingMicros) % 10) + '0');
+	display.write ("us  ");
+
+	display.write ("Loss:");
+	int packetLossPercent = (int)(packetLoss * 100);
+	display.write (((packetLossPercent / 100) % 10) + '0');
+	display.write (((packetLossPercent / 10) % 10) + '0');
+	display.write (((packetLossPercent) % 10) + '0');
+	display.write ("%  ");
+
+	if (sdConencted)
+		display.write ("   SD");
+	else
+		display.write ("No SD");
 
 	while (digitalRead (OLED_FR)) {}
 	display.display ();

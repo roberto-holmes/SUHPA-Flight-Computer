@@ -409,7 +409,7 @@ void loop()
 		lastTXMillis = currentMillis;
 		// Transmit PWM values
 		transmit (vertVal, horizVal);
-		Display::Update(vertVal, horizVal, horizMinVal, horizMaxVal, vertMinVal, vertMaxVal, horizTrim, vertTrim, batPercent);
+		Display::Update (vertVal, horizVal, horizMinVal, horizMaxVal, vertMinVal, vertMaxVal, horizTrim, vertTrim, batPercent, ping, packetLoss, sdCardInitialised);
 	}
 
 	if (currentMillis - lastSensorUpdateMillis > txInterval)
@@ -748,6 +748,7 @@ bool startNewFile ()
 		{
 			Serial.print ("Failed to open directory with error: ");
 			Serial.println (sdFile.getError ());
+			sdCardInitialised = false;
 		}
 		else
 		{
@@ -758,6 +759,7 @@ bool startNewFile ()
 		{
 			Serial.print ("Failed to open file with error: ");
 			Serial.println (sdFile.getError ());
+			sdCardInitialised = false;
 			return;
 		}
 		else
@@ -819,7 +821,7 @@ void initSD ()
 
 bool saveCurrentDataRecord ()
 {
-	if (!sdCardInitialised) initSD ();
+	initSD ();
 	if (!isFile ()) startNewFile ();
 
 	if (!sdFile.isOpen ())
@@ -828,6 +830,7 @@ bool saveCurrentDataRecord ()
 		{
 			Serial.print ("Failed to open file with error: ");
 			Serial.println (sdFile.getError ());
+			sdCardInitialised = false;
 			return false;
 		}
 	}

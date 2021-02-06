@@ -8,7 +8,7 @@ class Display
 {
 public:
 	static void Init ();
-	static void Update (int vertVal, int horizVal, int horizMinVal, int horizMaxVal, int vertMinVal, int vertMaxVal, int horizTrim, int vertTrim, float batPercent);
+	static void Update (int vertVal, int horizVal, int horizMinVal, int horizMaxVal, int vertMinVal, int vertMaxVal, int horizTrim, int vertTrim, float batPercent, float ping, float packetLoss, bool sdConencted);
 
 private:
 	static int xyPlotPositionX[DISPLAY_XY_PLOT_BUFFER_SIZE];
