@@ -145,6 +145,10 @@ byte package[PACKAGE_SIZE];
 const unsigned long txInterval = 10;
 unsigned long lastTXMillis;
 
+// Control when the display gets updated
+const unsigned long displayUpdateInterval = 10;
+unsigned long lastDisplayUpdateMillis;
+
 // Variables for calculating packet loss
 bool ack[PACKET_LOSS_SAMPLE_SIZE];
 int ackPos = 0;
@@ -277,6 +281,7 @@ void setup()
 
 	lastTXMillis = millis ();
 	lastSensorUpdateMillis = millis ();
+	lastDisplayUpdateMillis = millis ();
 
 	readFromEEPROM ();
 
@@ -409,15 +414,25 @@ void loop()
 		lastTXMillis = currentMillis;
 		// Transmit PWM values
 		transmit (vertVal, horizVal);
+	}
+
+	if (currentMillis - lastDisplayUpdateMillis > displayUpdateInterval)
+	{
+		lastDisplayUpdateMillis = currentMillis;
 		Display::Update (vertVal, horizVal, horizMinVal, horizMaxVal, vertMinVal, vertMaxVal, horizTrim, vertTrim, batPercent, ping, packetLoss, sdCardInitialised);
 	}
 
-	if (currentMillis - lastSensorUpdateMillis > txInterval)
+	if (currentMillis - lastSensorUpdateMillis > sensorReadInterval)
 	{
 		lastSensorUpdateMillis = currentMillis;
-		
-		readFromSensors ();		
+
+		// Read sensor data
+		readFromSensors ();
+
+		// Use to print data to console
 		//currentSensorData.printData ();
+
+		// Save the data to SD card
 		saveCurrentDataRecord ();
 	}
 }
