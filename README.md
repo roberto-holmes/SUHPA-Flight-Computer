@@ -4,13 +4,11 @@ Currently divided into CRASH (Controls, Radio, and Avionics for Southampton HPA)
 
 ## Software
 TODO:
-- Read and store sensor data
-- Store sensor calibration in EEPROM
-- Display status messages
+- Store sensor calibration in EEPROM (most calibration is being done on the IMU, but altitude is not being calibrated)
 - Varying frequency beep
-- Screensaver
 - Invert controls
 - Divide trim steps by 10
+- Fix lag when SD card disconnects
 
 ## Hardware
 
