@@ -163,7 +163,6 @@ float ping;	 // Average return trip time in ms
 
 // Sensors
 #define IMU_I2C_ADDRESS BNO055_ADDRESS_A
-#define SEA_LEVEL_PRESSURE_HPA 1013.25
 Adafruit_BNO055 imuDevice = Adafruit_BNO055(0, IMU_I2C_ADDRESS);
 Adafruit_BMP3XX barometerDevice = Adafruit_BMP3XX();
 DataRecord currentSensorData;
@@ -747,7 +746,7 @@ bool barometerRead()
 {
 	if (!barometerDevice.performReading()) return false;
 
-	currentSensorData.altitude = barometerDevice.readAltitude(SEA_LEVEL_PRESSURE_HPA);
+	currentSensorData.pressure = barometerDevice.readPressure ();
 	currentSensorData.temperature = barometerDevice.readTemperature();
 
 	return true;

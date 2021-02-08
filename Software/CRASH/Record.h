@@ -30,7 +30,7 @@ public:
 	float mag[3];
 	float orientation[3];
 
-	float altitude;
+	float pressure;
 	float temperature;
 
 	float batteryPercent;
@@ -92,7 +92,7 @@ public:
 		Serial.print (orientation[2]);
 		Serial.print (" ");
 
-		Serial.print (altitude);
+		Serial.print (pressure);
 		Serial.print (" ");
 		Serial.print (temperature);
 		Serial.print (" ");
@@ -104,7 +104,7 @@ public:
 
 	void saveHeader (ExFile* sdFile)
 	{
-		sdFile->print ("time");
+		sdFile->print ("time_Milliseconds");
 		sdFile->print (",");
 
 		sdFile->print ("vertVal");
@@ -117,54 +117,54 @@ public:
 		sdFile->print ("horizTrim");
 		sdFile->print (",");
 
-		sdFile->print ("ping");
+		sdFile->print ("ping_Microseconds");
 		sdFile->print (",");
-		sdFile->print ("packetLoss");
-		sdFile->print (",");
-
-		sdFile->print ("gravityX");
-		sdFile->print (",");
-		sdFile->print ("gravityY");
-		sdFile->print (",");
-		sdFile->print ("gravityZ");
-		sdFile->print (",");
-		sdFile->print ("linearAccelerationX");
-		sdFile->print (",");
-		sdFile->print ("linearAccelerationY");
-		sdFile->print (",");
-		sdFile->print ("linearAccelerationZ");
-		sdFile->print (",");
-		sdFile->print ("accelerationX");
-		sdFile->print (",");
-		sdFile->print ("accelerationY");
-		sdFile->print (",");
-		sdFile->print ("accelerationZ");
-		sdFile->print (",");
-		sdFile->print ("gyroX");
-		sdFile->print (",");
-		sdFile->print ("gyroY");
-		sdFile->print (",");
-		sdFile->print ("gyroZ");
-		sdFile->print (",");
-		sdFile->print ("magX");
-		sdFile->print (",");
-		sdFile->print ("magY");
-		sdFile->print (",");
-		sdFile->print ("magZ");
-		sdFile->print (",");
-		sdFile->print ("orientationX");
-		sdFile->print (",");
-		sdFile->print ("orientationY");
-		sdFile->print (",");
-		sdFile->print ("rientationZ");
+		sdFile->print ("packetLoss_Percent");
 		sdFile->print (",");
 
-		sdFile->print ("altitude");
+		sdFile->print ("gravityX_MetersPerSecondSquared");
 		sdFile->print (",");
-		sdFile->print ("temperature");
+		sdFile->print ("gravityY_MetersPerSecondSquared");
+		sdFile->print (",");
+		sdFile->print ("gravityZ_MetersPerSecondSquared");
+		sdFile->print (",");
+		sdFile->print ("linearAccelerationX_MetersPerSecondSquared");
+		sdFile->print (",");
+		sdFile->print ("linearAccelerationY_MetersPerSecondSquared");
+		sdFile->print (",");
+		sdFile->print ("linearAccelerationZ_MetersPerSecondSquared");
+		sdFile->print (",");
+		sdFile->print ("accelerationX_MetersPerSecondSquared");
+		sdFile->print (",");
+		sdFile->print ("accelerationY_MetersPerSecondSquared");
+		sdFile->print (",");
+		sdFile->print ("accelerationZ_MetersPerSecondSquared");
+		sdFile->print (",");
+		sdFile->print ("gyroX_RadiansPerSecond");
+		sdFile->print (",");
+		sdFile->print ("gyroY_RadiansPerSecond");
+		sdFile->print (",");
+		sdFile->print ("gyroZ_RadiansPerSecond");
+		sdFile->print (",");
+		sdFile->print ("magX_MicroTesla");
+		sdFile->print (",");
+		sdFile->print ("magY_MicroTesla");
+		sdFile->print (",");
+		sdFile->print ("magZ_MicroTesla");
+		sdFile->print (",");
+		sdFile->print ("orientationX_Radians");
+		sdFile->print (",");
+		sdFile->print ("orientationY_Radians");
+		sdFile->print (",");
+		sdFile->print ("orientationZ_Radians");
 		sdFile->print (",");
 
-		sdFile->print ("batteryPercent");
+		sdFile->print ("pressure_Pascals");
+		sdFile->print (",");
+		sdFile->print ("temperature_Celsius");
+		sdFile->print (",");
+
+		sdFile->print ("battery_Percent");
 
 		sdFile->println ();
 	}
@@ -226,7 +226,7 @@ public:
 		sdFile->print (orientation[2]);
 		sdFile->print (",");
 
-		sdFile->print (altitude);
+		sdFile->print (pressure);
 		sdFile->print (",");
 		sdFile->print (temperature);
 		sdFile->print (",");

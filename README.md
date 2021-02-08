@@ -4,11 +4,8 @@ Currently divided into CRASH (Controls, Radio, and Avionics for Southampton HPA)
 
 ## Software
 TODO:
-- Store sensor calibration in EEPROM (most calibration is being done on the IMU, but altitude is not being calibrated)
 - Varying frequency beep
-- Store pressure instead of altitude
 - Display current trim step
-- Include units in csv header
 
 Known issues:
 - SD card doesn't reinitialize if it disconects as this would cause the device to only transmit packets every couple of seconds
