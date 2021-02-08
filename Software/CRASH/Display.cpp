@@ -242,8 +242,6 @@ void Display::Update(int vertVal, int horizVal, int horizMinVal, int horizMaxVal
 			display.write("No SD");
 	}
 
-	while (digitalRead(OLED_FR))
-	{
-	}
+	//while (digitalRead(OLED_FR)){}
 	display.display();
 }

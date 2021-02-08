@@ -4,7 +4,9 @@ Currently divided into CRASH (Controls, Radio, and Avionics for Southampton HPA)
 
 ## Software
 TODO:
-- Varying frequency beep
+- Varying frequency beep as trim value changes
+- Accelerating trim input
+- Add average update rate to display
 - Display current trim step
 
 Known issues:

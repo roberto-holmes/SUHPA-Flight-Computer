@@ -17,6 +17,8 @@
 #include "Display.h"
 #include "Record.h"
 
+//#define VERBOSE_LOGGING
+
 int leds[] = {22, 21, 40, 39, 38, 37, 35, 0, 1, 2, 3, 4};
 
 // Trim LEDs
@@ -147,7 +149,7 @@ const unsigned long txInterval = 10;
 unsigned long lastTXMillis;
 
 // Control when the display gets updated
-const unsigned long displayUpdateInterval = 10;
+const unsigned long displayUpdateInterval = 20;
 unsigned long lastDisplayUpdateMillis;
 
 // Variables for calculating packet loss
@@ -291,13 +293,26 @@ void setup()
 	updateHorizTrim(0);
 }
 
+//uint32_t lastTime = 0;
+//int counter = 0;
+
 // the loop routine runs over and over again forever:
 void loop()
 {
+	// Use the test how often the loop updates
+	// counter++;
+	// if (counter >= 100)
+	// {
+	// 	uint32_t currentTime = millis ();
+	// 	Serial.println ((currentTime - lastTime) / counter);
+	// 	lastTime = currentTime;
+	// 	counter = 0;
+	// }
+
 	// Asynchronous beep
-	if (beepOn && millis() >= beepStopTime)
+	if (beepOn && millis () >= (uint32_t)beepStopTime)
 	{
-		analogWrite(buzzer, 0);
+		analogWrite (buzzer, 0);
 		beepOn = false;
 	}
 
@@ -322,31 +337,6 @@ void loop()
 
 	vertVal = constrain(tempVertVal, vertMinVal, vertMaxVal);
 	horizVal = constrain(tempHorizVal, horizMinVal, horizMaxVal);
-
-	// Debug PWM values
-	// Serial.print(vertVal);
-	// Serial.print(",");
-	// Serial.println(horizVal);
-
-	// Serial.print(analogRead(stickVert));
-	// Serial.print(" : ");
-	// Serial.print(vertStickValue);
-	// Serial.print("\t");
-	// Serial.print(analogRead(stickHoriz));
-	// Serial.print(" : ");
-	// Serial.print(horizStickValue);
-	// Serial.print("\n");
-
-	// Serial.print(tempVertVal);
-	// Serial.print(" : ");
-	// Serial.print(vertVal);
-	// Serial.print("\t");
-	// Serial.print(tempHorizVal);
-	// Serial.print(" : ");
-	// Serial.print(horizVal);
-	// Serial.print("\n");
-
-	// Serial.println(batPercent);
 
 	// Check if button is being pressed
 	if (digitalRead(trimUp))
@@ -527,7 +517,7 @@ void transmit(float ele, float rud)
 		// Serial.print(F("Time to transmit = "));
 		// Serial.println(end_timer - start_timer);  // print the timer result
 		// Serial.print(F(" us. Sent: "));
-		// Serial.print(payload);	// print the outgoing message
+		// Serial.println(payload);	// print the outgoing message
 
 		ack[ackPos] = true;
 		pingArray[pingPos++] = end_timer - start_timer;
@@ -547,12 +537,16 @@ void transmit(float ele, float rud)
 		}
 		else
 		{
-			Serial.print(F("Received: an empty ACK packet, "));	 // empty ACK packet received
+#if VERBOSE_LOGGING
+			Serial.println (F ("Received: an empty ACK packet, ")); // empty ACK packet received
+#endif
 		}
 	}
 	else
 	{
-		Serial.print(F("Transmission failed or timed out, "));	// payload was not delivered
+#if VERBOSE_LOGGING
+		Serial.println (F ("Transmission failed or timed out, ")); // payload was not delivered
+#endif
 		ack[ackPos] = false;
 	}
 
@@ -767,8 +761,10 @@ void startNewFile()
 		// Make sure there is a Data folder
 		if (!sdFile.open(STORAGE_DATA_DIRECTORY, O_CREAT))
 		{
+#ifdef VERBOSE_LOGGING
 			Serial.print("Failed to open directory with error: ");
 			Serial.println(sdFile.getError());
+#endif
 			sdCardInitialised = false;
 			return;
 		}
@@ -779,8 +775,10 @@ void startNewFile()
 
 		if (!sdFile.open(fileName, O_APPEND | O_RDWR | O_CREAT))
 		{
+#ifdef VERBOSE_LOGGING
 			Serial.print("Failed to open file with error: ");
 			Serial.println(sdFile.getError());
+#endif
 			sdCardInitialised = false;
 			return;
 		}
@@ -790,8 +788,10 @@ void startNewFile()
 			sdFile.close();
 		}
 
+#ifdef VERBOSE_LOGGING
 		Serial.print("Created new file: ");
 		Serial.println(fileName);
+#endif
 	}
 }
 
@@ -806,7 +806,9 @@ void findNextFileName()
 		if (!sdio.exists(fileName)) return;
 	}
 
+#ifdef VERBOSE_LOGGING
 	Serial.println("Reached maximum number of files");
+#endif
 }
 
 void setFileName(uint16_t value)
@@ -835,7 +837,9 @@ void initSD()
 	else
 	{
 		sdCardInitialised = false;
+#ifdef VERBOSE_LOGGING
 		Serial.println("No SD card found");
+#endif
 		return;
 	}
 }
@@ -849,10 +853,12 @@ bool saveCurrentDataRecord()
 
 		if (!sdFile.isOpen())
 		{
-			if (!sdFile.open(fileName, O_APPEND | O_RDWR | O_CREAT))
+			if (!sdFile.open (fileName, O_APPEND | O_RDWR | O_CREAT))
 			{
-				Serial.print("Failed to open file with error: ");
+#ifdef VERBOSE_LOGGING
+				Serial.print ("Failed to open file with error: ");
 				Serial.println(sdFile.getError());
+#endif
 				sdCardInitialised = false;
 				return false;
 			}
