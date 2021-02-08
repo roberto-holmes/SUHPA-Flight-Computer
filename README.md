@@ -6,9 +6,13 @@ Currently divided into CRASH (Controls, Radio, and Avionics for Southampton HPA)
 TODO:
 - Store sensor calibration in EEPROM (most calibration is being done on the IMU, but altitude is not being calibrated)
 - Varying frequency beep
-- Invert controls
-- Divide trim steps by 10
+- Store pressure instead of altitude
+- Display current trim step
+- Include units in csv header
+
+Known issues:
 - SD card doesn't reinitialize if it disconects as this would cause the device to only transmit packets every couple of seconds
+- Packet loss is not representative of the number of packets being received by Pod as the ACK packages being sent back are the ones getting lost. Pod has to send them at a lower power for some reason causing this issue.
 
 ## Hardware
 
