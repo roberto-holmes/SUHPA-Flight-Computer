@@ -13,6 +13,7 @@
 #include <stdint.h>
 #include <usb_serial.h>
 #include <util/crc16.h>
+
 #include "Display.h"
 #include "Record.h"
 
@@ -105,8 +106,8 @@ const float horizStickMultiplier = 1.0;
 float vertStickRes, horizStickRes;
 
 // Number of Trim steps / 2
-const int vertSteps = 10;
-const int horizSteps = 10;
+const int vertSteps = 100;
+const int horizSteps = 100;
 float vertRes, horizRes;
 
 // Values to store Trim and PWM
@@ -138,7 +139,7 @@ const unsigned long holdDelayCentre = 500;
 
 // Radio Setup
 RF24 radio(radioCE, radioCSN);
-uint8_t address[][6] = {"1Node", "2Node"};
+uint8_t address[][6] = {"CRASH", "Poddd"};
 byte package[PACKAGE_SIZE];
 
 // Variables frequency of communication
@@ -163,8 +164,8 @@ float ping;	 // Average return trip time in ms
 // Sensors
 #define IMU_I2C_ADDRESS BNO055_ADDRESS_A
 #define SEA_LEVEL_PRESSURE_HPA 1013.25
-Adafruit_BNO055 imuDevice = Adafruit_BNO055 (0, IMU_I2C_ADDRESS);
-Adafruit_BMP3XX barometerDevice = Adafruit_BMP3XX ();
+Adafruit_BNO055 imuDevice = Adafruit_BNO055(0, IMU_I2C_ADDRESS);
+Adafruit_BMP3XX barometerDevice = Adafruit_BMP3XX();
 DataRecord currentSensorData;
 const unsigned long sensorReadInterval = 50;
 unsigned long lastSensorUpdateMillis;
@@ -180,16 +181,16 @@ SdExFat sdio;
 ExFile sdFile;
 char* fileName = NULL;
 bool sdCardInitialised = false;
-SdioConfig sdConfig = SdioConfig ();
+SdioConfig sdConfig = SdioConfig();
 
 // the setup routine runs once when you press reset:
 void setup()
 {
 	Display::Init();
-	initSensors ();
-	initSD ();
+	initSensors();
+	initSD();
 
-	pinMode (vertMin, OUTPUT);
+	pinMode(vertMin, OUTPUT);
 	pinMode(vertLow, OUTPUT);
 	pinMode(vertMid, OUTPUT);
 	pinMode(vertHigh, OUTPUT);
@@ -258,9 +259,10 @@ void setup()
 	vertStickRes = vertStickMultiplier * (vertMaxVal - vertMinVal) / 2.0;
 	horizStickRes = horizStickMultiplier * (horizMaxVal - horizMinVal) / 2.0;
 
+	// Radio is not responding -> turn on warning LED
 	if (!radio.begin())
 	{
-		// Radio is not responding -> maybe hang and display message
+		digitalWrite(led2, HIGH);
 	}
 
 	// Initialise ack array
@@ -280,13 +282,13 @@ void setup()
 	// Put radio in TX mode
 	radio.stopListening();
 
-	lastTXMillis = millis ();
-	lastSensorUpdateMillis = millis ();
-	lastDisplayUpdateMillis = millis ();
+	lastTXMillis = millis();
+	lastSensorUpdateMillis = millis();
+	lastDisplayUpdateMillis = millis();
 
-	readFromEEPROM ();
+	readFromEEPROM();
 
-	updateVertTrim (0);
+	updateVertTrim(0);
 	updateHorizTrim(0);
 }
 
@@ -302,15 +304,15 @@ void loop()
 
 	// Calculate battery state
 	float batVoltage = analogRead(batSense) * batVoltFactor;
-	batPercent = constrain (map (batVoltage, v0, v100, 0.0, 1.0), 0.0, 1.0);
+	batPercent = constrain(map(batVoltage, v0, v100, 0.0, 1.0), 0.0, 1.0);
 	if (batPercent < .25)
-		digitalWrite (led1, HIGH);
+		digitalWrite(led1, HIGH);
 	else
-		digitalWrite (led1, LOW);
+		digitalWrite(led1, LOW);
 
 	// Read Stick inputs and normalise
-	float vertStickValue = 2.0 * (analogRead(stickVert) - vertStickZero) / (vertStickMax - vertStickMin);
-	float horizStickValue = -2.0 * (analogRead(stickHoriz) - horizStickZero) / (horizStickMax - horizStickMin);
+	float vertStickValue = -2.0 * (analogRead(stickVert) - vertStickZero) / (vertStickMax - vertStickMin);
+	float horizStickValue = 2.0 * (analogRead(stickHoriz) - horizStickZero) / (horizStickMax - horizStickMin);
 
 	// Calculate PWM values in both axis by combining stick inputs with trim
 	float tempVertVal = vertStickValue * vertStickRes + vertTrim * vertRes + vertZero;
@@ -410,35 +412,39 @@ void loop()
 	}
 
 	unsigned long currentMillis = millis();
+
+	// Decide whether it is time to transmit
 	if (currentMillis - lastTXMillis > txInterval)
 	{
 		lastTXMillis = currentMillis;
 		// Transmit PWM values
-		transmit (vertVal, horizVal);
+		transmit(vertVal, horizVal);
 	}
 
+	// Decide whether it is time to update screen
 	if (currentMillis - lastDisplayUpdateMillis > displayUpdateInterval)
 	{
 		lastDisplayUpdateMillis = currentMillis;
-		Display::Update (vertVal, horizVal, horizMinVal, horizMaxVal, vertMinVal, vertMaxVal, horizTrim, vertTrim, batPercent, ping, packetLoss, sdCardInitialised);
+		Display::Update(vertVal, horizVal, horizMinVal, horizMaxVal, vertMinVal, vertMaxVal, horizTrim, vertTrim, batPercent, ping, packetLoss, sdCardInitialised);
 	}
 
+	// Decide whether it is time to read and save sensor data
 	if (currentMillis - lastSensorUpdateMillis > sensorReadInterval)
 	{
 		lastSensorUpdateMillis = currentMillis;
 
 		// Read sensor data
-		readFromSensors ();
+		readFromSensors();
 
 		// Use to print data to console
 		//currentSensorData.printData ();
 
 		// Save the data to SD card
-		saveCurrentDataRecord ();
+		saveCurrentDataRecord();
 	}
 }
 
-void beep (int level, int time)
+void beep(int level, int time)
 {
 	analogWrite(buzzer, 64 + (level * 16));
 	beepStopTime = millis() + time;
@@ -574,7 +580,7 @@ void transmit(float ele, float rud)
 	//Serial.println(ping);
 }
 
-void readFromEEPROM ()
+void readFromEEPROM()
 {
 #ifdef ENABLE_EEPROM
 
@@ -622,15 +628,15 @@ int readIntToEEPROM(int address)
 	return value;
 }
 
-void initSensors ()
+void initSensors()
 {
-	imuInit ();
-	barometerInit ();
+	imuInit();
+	barometerInit();
 }
 
-void readFromSensors ()
+void readFromSensors()
 {
-	currentSensorData.time = millis ();
+	currentSensorData.time = millis();
 	currentSensorData.vertVal = vertVal;
 	currentSensorData.horizVal = horizVal;
 	currentSensorData.vertTrim = vertTrim;
@@ -638,63 +644,63 @@ void readFromSensors ()
 	currentSensorData.ping = ping;
 	currentSensorData.packetLoss = packetLoss;
 	currentSensorData.batteryPercent = batPercent;
-	imuRead ();
-	barometerRead ();
+	imuRead();
+	barometerRead();
 }
 
-bool imuInit ()
+bool imuInit()
 {
-	if (!imuDevice.begin (Adafruit_BNO055::adafruit_bno055_opmode_t::OPERATION_MODE_NDOF)) return false;
+	if (!imuDevice.begin(Adafruit_BNO055::adafruit_bno055_opmode_t::OPERATION_MODE_NDOF)) return false;
 
 	//imuDevice.setAxisRemap (Adafruit_BNO055::adafruit_bno055_axis_remap_config_t::REMAP_CONFIG_P3);
 	//imuDevice.setAxisSign (Adafruit_BNO055::adafruit_bno055_axis_remap_sign_t::REMAP_SIGN_P3);
-	imuDevice.setExtCrystalUse (true);
-	imuDevice.enterNormalMode ();
+	imuDevice.setExtCrystalUse(true);
+	imuDevice.enterNormalMode();
 
 	//while (!imuDevice.isFullyCalibrated ()) delay (10);
 
 #ifdef VERBOSE_LOGGING
-	Serial.println ("BNO055 Configured");
-#endif // VERBOSE_LOGGING
+	Serial.println("BNO055 Configured");
+#endif	// VERBOSE_LOGGING
 	return true;
 }
 
-bool barometerInit ()
+bool barometerInit()
 {
-	if (!barometerDevice.begin ()) return false;
+	if (!barometerDevice.begin_I2C()) return false;
 
 	// Configure device
-	if (!barometerDevice.setTemperatureOversampling (BMP3_OVERSAMPLING_2X)) return false;
-	if (!barometerDevice.setPressureOversampling (BMP3_OVERSAMPLING_8X)) return false;
-	if (!barometerDevice.setIIRFilterCoeff (BMP3_IIR_FILTER_COEFF_3)) return false;
-	if (!barometerDevice.setOutputDataRate (BMP3_ODR_50_HZ)) return false;
+	if (!barometerDevice.setTemperatureOversampling(BMP3_OVERSAMPLING_2X)) return false;
+	if (!barometerDevice.setPressureOversampling(BMP3_OVERSAMPLING_8X)) return false;
+	if (!barometerDevice.setIIRFilterCoeff(BMP3_IIR_FILTER_COEFF_3)) return false;
+	if (!barometerDevice.setOutputDataRate(BMP3_ODR_50_HZ)) return false;
 
 #ifdef VERBOSE_LOGGING
-	Serial.println ("BMP388 Configured");
-#endif // VERBOSE_LOGGING
+	Serial.println("BMP388 Configured");
+#endif	// VERBOSE_LOGGING
 	return true;
 }
 
-bool imuRead ()
+bool imuRead()
 {
 	sensors_event_t imuEvent;
-	imuDevice.getEvent (&imuEvent, Adafruit_BNO055::VECTOR_ACCELEROMETER);
+	imuDevice.getEvent(&imuEvent, Adafruit_BNO055::VECTOR_ACCELEROMETER);
 	currentSensorData.acceleration[0] = imuEvent.acceleration.x;
 	currentSensorData.acceleration[1] = imuEvent.acceleration.y;
 	currentSensorData.acceleration[2] = imuEvent.acceleration.z;
-	imuDevice.getEvent (&imuEvent, Adafruit_BNO055::VECTOR_MAGNETOMETER);
+	imuDevice.getEvent(&imuEvent, Adafruit_BNO055::VECTOR_MAGNETOMETER);
 	currentSensorData.mag[0] = imuEvent.magnetic.x;
 	currentSensorData.mag[1] = imuEvent.magnetic.y;
 	currentSensorData.mag[2] = imuEvent.magnetic.z;
-	imuDevice.getEvent (&imuEvent, Adafruit_BNO055::VECTOR_GYROSCOPE);
+	imuDevice.getEvent(&imuEvent, Adafruit_BNO055::VECTOR_GYROSCOPE);
 	currentSensorData.gyro[0] = imuEvent.gyro.x * DEG_TO_RAD;
 	currentSensorData.gyro[1] = imuEvent.gyro.y * DEG_TO_RAD;
 	currentSensorData.gyro[2] = imuEvent.gyro.z * DEG_TO_RAD;
-	imuDevice.getEvent (&imuEvent, Adafruit_BNO055::VECTOR_GRAVITY);
+	imuDevice.getEvent(&imuEvent, Adafruit_BNO055::VECTOR_GRAVITY);
 	currentSensorData.gravity[0] = imuEvent.acceleration.x;
 	currentSensorData.gravity[1] = imuEvent.acceleration.y;
 	currentSensorData.gravity[2] = imuEvent.acceleration.z;
-	imuDevice.getEvent (&imuEvent, Adafruit_BNO055::VECTOR_LINEARACCEL);
+	imuDevice.getEvent(&imuEvent, Adafruit_BNO055::VECTOR_LINEARACCEL);
 	currentSensorData.linearAcceleration[0] = imuEvent.acceleration.x;
 	currentSensorData.linearAcceleration[1] = imuEvent.acceleration.y;
 	currentSensorData.linearAcceleration[2] = imuEvent.acceleration.z;
@@ -705,7 +711,7 @@ bool imuRead ()
 	//	y:= roll
 	//	z:= heading
 	// We then also need to remap to have the correct ranges of angles
-	imuDevice.getEvent (&imuEvent, Adafruit_BNO055::VECTOR_EULER);
+	imuDevice.getEvent(&imuEvent, Adafruit_BNO055::VECTOR_EULER);
 	currentSensorData.orientation[0] = imuEvent.orientation.z * DEG_TO_RAD;
 	currentSensorData.orientation[1] = imuEvent.orientation.y * DEG_TO_RAD;
 	currentSensorData.orientation[2] = imuEvent.orientation.x * DEG_TO_RAD;
@@ -737,82 +743,82 @@ bool imuRead ()
 	return true;
 }
 
-bool barometerRead ()
+bool barometerRead()
 {
-	if (!barometerDevice.performReading ()) return false;
+	if (!barometerDevice.performReading()) return false;
 
-	currentSensorData.altitude = barometerDevice.readAltitude (SEA_LEVEL_PRESSURE_HPA);
-	currentSensorData.temperature = barometerDevice.readTemperature ();
+	currentSensorData.altitude = barometerDevice.readAltitude(SEA_LEVEL_PRESSURE_HPA);
+	currentSensorData.temperature = barometerDevice.readTemperature();
 
 	return true;
 }
 
-bool isFile ()
+bool isFile()
 {
 	return fileName != NULL;
 }
 
-bool startNewFile ()
+void startNewFile()
 {
-	if (!sdCardInitialised) initSD ();
+	if (!sdCardInitialised) initSD();
 	if (sdCardInitialised)
 	{
-		findNextFileName ();
+		findNextFileName();
 
 		// Make sure there is a Data folder
-		if (!sdFile.open (STORAGE_DATA_DIRECTORY, O_CREAT))
+		if (!sdFile.open(STORAGE_DATA_DIRECTORY, O_CREAT))
 		{
-			Serial.print ("Failed to open directory with error: ");
-			Serial.println (sdFile.getError ());
-			sdCardInitialised = false;
-		}
-		else
-		{
-			sdFile.close ();
-		}
-
-		if (!sdFile.open (fileName, O_APPEND | O_RDWR | O_CREAT))
-		{
-			Serial.print ("Failed to open file with error: ");
-			Serial.println (sdFile.getError ());
+			Serial.print("Failed to open directory with error: ");
+			Serial.println(sdFile.getError());
 			sdCardInitialised = false;
 			return;
 		}
 		else
 		{
-			currentSensorData.saveHeader (&sdFile);
-			sdFile.close ();
+			sdFile.close();
 		}
 
-		Serial.print ("Created new file: ");
-		Serial.println (fileName);
+		if (!sdFile.open(fileName, O_APPEND | O_RDWR | O_CREAT))
+		{
+			Serial.print("Failed to open file with error: ");
+			Serial.println(sdFile.getError());
+			sdCardInitialised = false;
+			return;
+		}
+		else
+		{
+			currentSensorData.saveHeader(&sdFile);
+			sdFile.close();
+		}
+
+		Serial.print("Created new file: ");
+		Serial.println(fileName);
 	}
 }
 
-void findNextFileName ()
+void findNextFileName()
 {
-	if (fileName == NULL) fileName = (char*)malloc (STORAGE_FILE_NAME_LENGTH);
-	memcpy (fileName, STORAGE_FILE_NAME_FORMAT, STORAGE_FILE_NAME_LENGTH);
+	if (fileName == NULL) fileName = (char*)malloc(STORAGE_FILE_NAME_LENGTH);
+	memcpy(fileName, STORAGE_FILE_NAME_FORMAT, STORAGE_FILE_NAME_LENGTH);
 
 	for (int i = 0; i <= STORAGE_FILE_NAME_MAX_NUMBER; i++)
 	{
-		setFileName (i);
-		if (!sdio.exists (fileName)) return;
+		setFileName(i);
+		if (!sdio.exists(fileName)) return;
 	}
 
-	Serial.println ("Reached maximum number of files");
+	Serial.println("Reached maximum number of files");
 }
 
-void setFileName (uint16_t value)
+void setFileName(uint16_t value)
 {
-	fileName[STORAGE_FILE_NAME_NUMBER_START + 0] = getNumbersCharacter ((value / 1000) % 10);
-	fileName[STORAGE_FILE_NAME_NUMBER_START + 1] = getNumbersCharacter ((value / 100) % 10);
-	fileName[STORAGE_FILE_NAME_NUMBER_START + 2] = getNumbersCharacter ((value / 10) % 10);
-	fileName[STORAGE_FILE_NAME_NUMBER_START + 3] = getNumbersCharacter ((value / 1) % 10);
+	fileName[STORAGE_FILE_NAME_NUMBER_START + 0] = getNumbersCharacter((value / 1000) % 10);
+	fileName[STORAGE_FILE_NAME_NUMBER_START + 1] = getNumbersCharacter((value / 100) % 10);
+	fileName[STORAGE_FILE_NAME_NUMBER_START + 2] = getNumbersCharacter((value / 10) % 10);
+	fileName[STORAGE_FILE_NAME_NUMBER_START + 3] = getNumbersCharacter((value / 1) % 10);
 }
 
-
-char getNumbersCharacter (uint8_t value)
+char getNumbersCharacter(uint8_t value)
 {
 	if (value < 10)
 		return value + 48;
@@ -820,41 +826,41 @@ char getNumbersCharacter (uint8_t value)
 		return '-';
 }
 
-void initSD ()
+void initSD()
 {
-	sdio.chvol ();
-	if (sdio.begin (sdConfig))
+	sdio.chvol();
+	if (sdio.begin(sdConfig))
 	{
 		sdCardInitialised = true;
 	}
 	else
 	{
 		sdCardInitialised = false;
-		Serial.println ("No SD card found");
+		Serial.println("No SD card found");
 		return;
 	}
 }
 
-bool saveCurrentDataRecord ()
+bool saveCurrentDataRecord()
 {
 	//initSD ();
 	if (sdCardInitialised)
 	{
-		if (!isFile ()) startNewFile ();
+		if (!isFile()) startNewFile();
 
-		if (!sdFile.isOpen ())
+		if (!sdFile.isOpen())
 		{
-			if (!sdFile.open (fileName, O_APPEND | O_RDWR | O_CREAT))
+			if (!sdFile.open(fileName, O_APPEND | O_RDWR | O_CREAT))
 			{
-				Serial.print ("Failed to open file with error: ");
-				Serial.println (sdFile.getError ());
+				Serial.print("Failed to open file with error: ");
+				Serial.println(sdFile.getError());
 				sdCardInitialised = false;
 				return false;
 			}
 		}
 
-		currentSensorData.saveData (&sdFile);
-		sdFile.close ();
+		currentSensorData.saveData(&sdFile);
+		sdFile.close();
 
 		return true;
 	}

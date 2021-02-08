@@ -19,7 +19,7 @@ int rudPin = 6;	 //Pins 5 and 6 for pod board
 float eleAngle, rudAngle;
 
 RF24 radio(radioCE, radioCSN);
-uint8_t address[][6] = {"1Node", "2Node"};
+uint8_t address[][6] = {"CRASH", "Poddd"};
 byte package[PACKAGE_SIZE];
 byte ackPayload[ACK_PAYLOAD_SIZE] = "E";
 
@@ -28,10 +28,16 @@ float rud, ele;
 void setup()
 {
 	Serial.begin(115200);
-	radio.begin();
+
+	// Radio is not responding -> turn on warning LED
+	if (!radio.begin())
+	{
+		digitalWrite(4, HIGH);
+	}
 
 	//! For some reason, higher values lead to greater packet loss
 	//! RF24_PA_LOW isn't powerful enough for consistent packets
+	// From 0 to 3
 	radio.setPALevel(1);
 
 	// Set up ack payloads
