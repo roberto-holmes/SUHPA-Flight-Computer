@@ -21,13 +21,17 @@
 #define XY_PLOT_SIZE 18
 #define XY_PLOT_TAIL_MERGE_DELAY 100
 
-#define BAR_POSITION_CENTER_X 75
+#define BAR_POSITION_CENTER_X 63
 #define BAR_POSITION_HORIZ_Y 25
 #define BAR_POSITION_VERT_Y 45
 #define BAR_HEIGHT 13
 #define BAR_WIDTH 60
 #define BAR_TRIM_WIDTH 11
 #define BAR_COLOUR SSD1362_WHITE / 2
+
+#define TRIM_TEXT_POSITION_X 128
+#define BATTER_TEXT_POSITION_HORIZ_Y 28
+#define BATTER_TEXT_POSITION_VERT_Y 48
 
 #define SCREEN_WIDTH 256  // OLED display width, in pixels
 #define SCREEN_HEIGHT 64  // OLED display height, in pixels
@@ -37,7 +41,7 @@
 #define OLED_RESET 16
 #define OLED_FR 20
 
-Adafruit_SSD1362 display(SCREEN_WIDTH, SCREEN_HEIGHT, &SPI, OLED_DC, OLED_RESET, OLED_CS);
+Adafruit_SSD1362 display (SCREEN_WIDTH, SCREEN_HEIGHT, &SPI, OLED_DC, OLED_RESET, OLED_CS);
 
 int Display::xyPlotPositionX[DISPLAY_XY_PLOT_BUFFER_SIZE];
 int Display::xyPlotPositionY[DISPLAY_XY_PLOT_BUFFER_SIZE];
@@ -134,6 +138,45 @@ void Display::Update(int vertVal, int horizVal, int horizMinVal, int horizMaxVal
 		}
 
 		// Trim
+		display.setCursor (TRIM_TEXT_POSITION_X, BATTER_TEXT_POSITION_HORIZ_Y);
+		int absHorizTrim = abs (horizTrim);
+		if (absHorizTrim >= 10)
+		{
+			if (horizTrim < 0)
+				display.write ('-');
+			else
+				display.write (' ');
+			display.write (((absHorizTrim / 10) % 10) + '0');
+		}
+		else
+		{
+			display.write (' ');
+			if (horizTrim < 0)
+				display.write ('-');
+			else
+				display.write (' ');
+		}
+		display.write (((absHorizTrim) % 10) + '0');
+
+		display.setCursor (TRIM_TEXT_POSITION_X, BATTER_TEXT_POSITION_VERT_Y);
+		int absVertTrim = abs (vertTrim);
+		if (absVertTrim >= 10)
+		{
+			if (vertTrim < 0)
+				display.write ('-');
+			else
+				display.write (' ');
+			display.write (((absVertTrim / 10) % 10) + '0');
+		}
+		else
+		{
+			display.write (' ');
+			if (vertTrim < 0)
+				display.write ('-');
+			else
+				display.write (' ');
+		}
+		display.write (((absVertTrim) % 10) + '0');
 
 		//Final stick position
 		int outputX = XY_PLOT_CENTER_X + (int)(horizValPercent * XY_PLOT_SIZE);

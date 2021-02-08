@@ -108,8 +108,8 @@ const float horizStickMultiplier = 1.0;
 float vertStickRes, horizStickRes;
 
 // Number of Trim steps / 2
-const int vertSteps = 100;
-const int horizSteps = 100;
+const int vertSteps = 99;
+const int horizSteps = 99;
 float vertRes, horizRes;
 
 // Values to store Trim and PWM
