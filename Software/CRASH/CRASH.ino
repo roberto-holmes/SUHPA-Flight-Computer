@@ -329,8 +329,8 @@ void loop()
 	float horizStickValue = 2.0 * (analogRead(stickHoriz) - horizStickZero) / (horizStickMax - horizStickMin);
 
 	// Calculate PWM values in both axis by combining stick inputs with trim
-	float tempVertVal = vertStickValue * vertStickRes + vertTrim * vertRes + vertZero;
-	float tempHorizVal = horizStickValue * horizStickRes + horizTrim * horizRes + horizZero;
+	float tempVertVal = vertStickValue * vertStickRes - vertTrim * vertRes + vertZero;
+	float tempHorizVal = horizStickValue * horizStickRes - horizTrim * horizRes + horizZero;
 
 	vertStickValue = constrain(vertStickValue, -1, 1);
 	horizStickValue = constrain(horizStickValue, -1, 1);
