@@ -17,7 +17,7 @@
 #include "Display.h"
 #include "Record.h"
 
-//#define VERBOSE_LOGGING
+#define VERBOSE_LOGGING
 
 int leds[] = {22, 21, 40, 39, 38, 37, 35, 0, 1, 2, 3, 4};
 
@@ -89,9 +89,9 @@ const float v0 = 3 * 3.5;
 const float batVoltFactor = (3.3 * 4.09) / 1024;
 float batPercent;
 
-// PWM range (Absolute max 588 to 2400 ish)
-const int vertMaxVal = 2200;
-const int vertMinVal = 750;
+// PWM range (Absolute max 588 to 2400 ish) (reduced by 30% or 436)
+const int vertMaxVal = 2200 -218;
+const int vertMinVal = 750 +218;
 const int horizMaxVal = 2200;
 const int horizMinVal = 750;
 float vertZero, horizZero;
@@ -328,12 +328,16 @@ void loop()
 	float vertStickValue = -2.0 * (analogRead(stickVert) - vertStickZero) / (vertStickMax - vertStickMin);
 	float horizStickValue = 2.0 * (analogRead(stickHoriz) - horizStickZero) / (horizStickMax - horizStickMin);
 
+  // tan(x*atan(k))/k the value to get smooth control on the small stick movement
+  int k = 7;
+  vertStickValue = tan(vertStickValue*atan(k))/k;
+
 	// Calculate PWM values in both axis by combining stick inputs with trim
-	float tempVertVal = vertStickValue * vertStickRes - vertTrim * vertRes + vertZero;
+	float tempVertVal = -(vertStickValue * vertStickRes - vertTrim * vertRes) + vertZero;
 	float tempHorizVal = horizStickValue * horizStickRes - horizTrim * horizRes + horizZero;
 
 	vertStickValue = constrain(vertStickValue, -1, 1);
-	horizStickValue = constrain(horizStickValue, -1, 1);
+  horizStickValue = constrain(horizStickValue, -1, 1);
 
 	vertVal = constrain(tempVertVal, vertMinVal, vertMaxVal);
 	horizVal = constrain(tempHorizVal, horizMinVal, horizMaxVal);
@@ -537,14 +541,14 @@ void transmit(float ele, float rud)
 		}
 		else
 		{
-#if VERBOSE_LOGGING
+#ifdef VERBOSE_LOGGING
 			Serial.println (F ("Received: an empty ACK packet, ")); // empty ACK packet received
 #endif
 		}
 	}
 	else
 	{
-#if VERBOSE_LOGGING
+#ifdef VERBOSE_LOGGING
 		Serial.println (F ("Transmission failed or timed out, ")); // payload was not delivered
 #endif
 		ack[ackPos] = false;
