@@ -1,0 +1,4 @@
+Record=DiagramHierarchy|SourceDocument=CRASH.MbsDoc|Kind=Multi-board Schematic Module|Designator=1|Source=..\CRASH_Inputs\CRASH_Inputs.PrjPcb
+Record=SubProject|SourceDocument=CRASH.MbsDoc|ProjectPath=..\CRASH_Inputs\CRASH_Inputs.PrjPcb
+Record=DiagramHierarchy|SourceDocument=CRASH.MbsDoc|Kind=Multi-board Schematic Module|Designator=2|Source=..\CRASH_MCU\CRASH_MCU.PrjPcb
+Record=SubProject|SourceDocument=CRASH.MbsDoc|ProjectPath=..\CRASH_MCU\CRASH_MCU.PrjPcb
